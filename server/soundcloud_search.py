@@ -29,15 +29,19 @@ def search_soundcloud(query, limit=15):
             title = it.get('title', '')
             user = it.get('user', {})
             artist = user.get('username', 'Unknown Artist')
-            # If artist looks like User 12345678, try extracting real artist from "Artist - Title"
-            if re.match(r'(?i)^user[\s_-]*\d*', artist) or artist.lower() in ('unknown', 'unknown artist'):
-                if ' - ' in title:
-                    parts = title.split(' - ', 1)
-                    if parts[0].strip() and not re.match(r'(?i)^user[\s_-]*\d*', parts[0].strip()):
-                        artist = parts[0].strip()
-                        title = parts[1].strip()
-                else:
-                    artist = ''
+            # If artist has hyphen in title or looks like uploader, try extracting real artist: "Artist - Title"
+            if ' - ' in title or ' — ' in title:
+                delim = ' - ' if ' - ' in title else ' — '
+                parts = title.split(delim, 1)
+                cand_artist = parts[0].strip()
+                cand_title = parts[1].strip()
+                if cand_artist and not re.match(r'(?i)^user[\s_-]*\d*', cand_artist):
+                    # If current artist is unknown, user ID, or the title explicitly contains "Artist - Title"
+                    if re.match(r'(?i)^user[\s_-]*\d*', artist) or artist.lower() in ('unknown', 'unknown artist') or cand_artist.lower() in query.lower() or query.lower() in cand_artist.lower():
+                        artist = cand_artist
+                        title = cand_title
+            elif re.match(r'(?i)^user[\s_-]*\d*', artist) or artist.lower() in ('unknown', 'unknown artist'):
+                artist = ''
             duration_sec = (it.get('duration', 0)) / 1000.0
             artwork = it.get('artwork_url') or user.get('avatar_url') or ''
             if artwork and 'large' in artwork:

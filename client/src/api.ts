@@ -140,9 +140,10 @@ export async function saveReorderedQueue(ids: string[]): Promise<boolean> {
   return res.ok;
 }
 
-export async function searchOnlineTracks(query: string, source: string = 'all'): Promise<OnlineTrack[]> {
+export async function searchOnlineTracks(query: string, source: string = 'all', mode: string = 'tracks'): Promise<OnlineTrack[]> {
   try {
-    const res = await fetch(`${API_BASE}/online/search?q=${encodeURIComponent(query)}&source=${encodeURIComponent(source)}`);
+    const typeParam = mode === 'artists' ? '&type=artist' : '';
+    const res = await fetch(`${API_BASE}/online/search?q=${encodeURIComponent(query)}&source=${encodeURIComponent(source)}${typeParam}`);
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];

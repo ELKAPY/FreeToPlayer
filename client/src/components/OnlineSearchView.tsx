@@ -246,7 +246,7 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
     setIsSearching(true);
     try {
       if (mode === 'tracks' || mode === 'artists') {
-        const data = await searchOnlineTracks(q, source);
+        const data = await searchOnlineTracks(q, source, mode);
         setTrackResults(Array.isArray(data) ? data : []);
       } else if (mode === 'albums') {
         const data = await searchOnlineAlbums(q, source);
@@ -413,14 +413,58 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
       list = list.filter((t) => t.duration >= 90);
     }
 
-    if (resultSort === 'duration') {
+    // Client-side relevance re-ranking to guarantee exact artist/title matches stay at the very top (#1)
+    if (resultSort === 'relevance' && query.trim()) {
+      const q = query.trim().toLowerCase();
+      const cleanQ = q.replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+      const qWords = cleanQ.split(' ').filter(Boolean);
+
+      const scoreTrack = (t: OnlineTrack) => {
+        const a = (t.artist || '').toLowerCase().replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+        const tit = (t.title || '').toLowerCase().replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+
+        let s = 0;
+
+        // 1. Exact artist match: highest priority
+        if (a === cleanQ) s += 10000;
+        else if (a.startsWith(cleanQ)) s += 7000;
+        else if (a.includes(cleanQ)) s += 5000;
+
+        // 2. Exact title match
+        if (tit === cleanQ) s += 4000;
+        else if (tit.startsWith(cleanQ)) s += 2500;
+        else if (tit.includes(cleanQ)) s += 1500;
+
+        // 3. Word token matches
+        let artistWordsMatched = 0;
+        let titleWordsMatched = 0;
+        for (const w of qWords) {
+          if (a.includes(w)) artistWordsMatched++;
+          if (tit.includes(w)) titleWordsMatched++;
+        }
+
+        if (qWords.length > 0 && artistWordsMatched === qWords.length) {
+          s += 3000;
+        }
+        s += artistWordsMatched * 400 + titleWordsMatched * 200;
+
+        // Deduct points for garbage or cover channels in artist name
+        if (/(official|lyrics|topic|remix|cover|karaoke|slowed|sped up)/i.test(t.artist || '')) {
+          s -= 500;
+        }
+
+        return s;
+      };
+
+      list.sort((a, b) => scoreTrack(b) - scoreTrack(a));
+    } else if (resultSort === 'duration') {
       list.sort((a, b) => (b.duration || 0) - (a.duration || 0));
     } else if (resultSort === 'title') {
       list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     }
 
     return list;
-  }, [trackResults, filterCleanOnly, filterMinDuration, resultSort]);
+  }, [trackResults, filterCleanOnly, filterMinDuration, resultSort, query]);
 
   // Infinite scroll observer: load next batch when scrolling near bottom
   useEffect(() => {
@@ -1195,11 +1239,31 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
         ) : searchMode === 'artists' ? (
           /* Artists Discography & Deduplicated Tracks */
           (() => {
-            // Group track results by artist or display deduplicated tracks for the searched artist
-            const tracksByArtist = processedTrackResults;
+            // In Artists mode, prioritize and filter tracks belonging to the searched artist
+            const q = query.trim().toLowerCase();
+            const cleanQ = q.replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+            const qWords = cleanQ.split(' ').filter(Boolean);
+
+            const isMatchingArtist = (t: OnlineTrack) => {
+              const a = (t.artist || '').toLowerCase().replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+              if (a === cleanQ || a.startsWith(cleanQ) || a.includes(cleanQ)) return true;
+              return qWords.length > 0 && qWords.every((w) => a.includes(w));
+            };
+
+            // First priority: tracks where the artist actually matches the search query!
+            const directArtistTracks = processedTrackResults.filter(isMatchingArtist);
+            const fallbackTracks = processedTrackResults.filter((t) => !isMatchingArtist(t));
+            const tracksByArtist = directArtistTracks.length > 0 ? directArtistTracks : fallbackTracks;
+
+            // Deduplicate titles within this artist's discography
             const uniqueTitlesMap = new Map<string, OnlineTrack>();
             for (const t of tracksByArtist) {
-              const norm = `${t.title.toLowerCase().trim()}`;
+              const norm = t.title
+                .toLowerCase()
+                .replace(/\s*[\(\[](official\s*(music\s*)?(video|audio)|lyric\s*video|audio|hd|4k|visualizer)[\)\]]/gi, '')
+                .replace(/[^a-zа-я0-9\s]/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
               if (!uniqueTitlesMap.has(norm)) {
                 uniqueTitlesMap.set(norm, t);
               }
@@ -1219,7 +1283,9 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
               );
             }
 
-            const mainArtist = deduplicated[0]?.artist || query;
+            // Determine display artist name: pick the one matching cleanQ or first track's artist
+            const matchedTrack = directArtistTracks[0] || deduplicated[0];
+            const mainArtist = matchedTrack?.artist && matchedTrack.artist !== '-----' ? matchedTrack.artist : query;
 
             return (
               <div className="flex flex-col gap-4">

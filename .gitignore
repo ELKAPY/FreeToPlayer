@@ -72,9 +72,14 @@ client/dist/
 server/dist/
 dist/
 
-# Dependencies
+# Temporary Executables and Editor Swap Files
+DJ-Player.exe~
+FreeToPlayer.exe~
+*.exe~
+*.tmp
 node_modules/
 client/node_modules/
+android/mobile-web/node_modules/
 
 # ------------------------------------------------------------------------------
 # 4. Android Build Artifacts & IDE Files

@@ -1756,10 +1756,26 @@ func searchYouTubeTracksDirect(query string) ([]OnlineTrack, error) {
 				if len(it.VideoThumbnails) > 0 && it.VideoThumbnails[0].URL != "" {
 					coverURL = it.VideoThumbnails[0].URL
 				}
+				artist := strings.TrimSpace(it.Author)
+				title := strings.TrimSpace(it.Title)
+				if strings.Contains(title, " - ") || strings.Contains(title, " — ") {
+					delim := " - "
+					if strings.Contains(title, " — ") {
+						delim = " — "
+					}
+					parts := strings.SplitN(title, delim, 2)
+					candA := strings.TrimSpace(parts[0])
+					candT := strings.TrimSpace(parts[1])
+					if candA != "" && (reUserArtist.MatchString(artist) || strings.Contains(strings.ToLower(artist), "topic") || strings.Contains(strings.ToLower(candA), strings.ToLower(query)) || strings.Contains(strings.ToLower(query), strings.ToLower(candA))) {
+						artist = candA
+						title = candT
+					}
+				}
+
 				tracks = append(tracks, OnlineTrack{
 					ID:         "yt-" + it.VideoID,
-					Title:      it.Title,
-					Artist:     it.Author,
+					Title:      title,
+					Artist:     artist,
 					Duration:   durSec,
 					DurStr:     durStr,
 					CoverURL:   coverURL,
@@ -1817,10 +1833,26 @@ func searchYouTubeTracksDirect(query string) ([]OnlineTrack, error) {
 				if coverURL == "" {
 					coverURL = fmt.Sprintf("https://i.ytimg.com/vi/%s/hqdefault.jpg", vid)
 				}
+				artist := strings.TrimSpace(it.UploaderName)
+				title := strings.TrimSpace(it.Title)
+				if strings.Contains(title, " - ") || strings.Contains(title, " — ") {
+					delim := " - "
+					if strings.Contains(title, " — ") {
+						delim = " — "
+					}
+					parts := strings.SplitN(title, delim, 2)
+					candA := strings.TrimSpace(parts[0])
+					candT := strings.TrimSpace(parts[1])
+					if candA != "" && (reUserArtist.MatchString(artist) || strings.Contains(strings.ToLower(artist), "topic") || strings.Contains(strings.ToLower(candA), strings.ToLower(query)) || strings.Contains(strings.ToLower(query), strings.ToLower(candA))) {
+						artist = candA
+						title = candT
+					}
+				}
+
 				tracks = append(tracks, OnlineTrack{
 					ID:         "yt-" + vid,
-					Title:      it.Title,
-					Artist:     it.UploaderName,
+					Title:      title,
+					Artist:     artist,
 					Duration:   durSec,
 					DurStr:     durStr,
 					CoverURL:   coverURL,
@@ -1971,6 +2003,8 @@ func classifyTrackVersion(title string) (versionType, versionLabel string) {
 
 func cleanForSimilarity(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
+	// Deduplicate doubled letters and normalize common typo like "yelow" -> "yellow"
+	s = strings.ReplaceAll(s, "yelow", "yellow")
 	s = reLeadingArticles.ReplaceAllString(s, "")
 	s = reBracketsOnly.ReplaceAllString(s, "")
 	s = reYears.ReplaceAllString(s, "")
@@ -1981,6 +2015,90 @@ func cleanForSimilarity(s string) string {
 		}
 		return ' '
 	}, s)), " ")
+}
+
+func calculateSearchRelevance(query string, title, artist string, isArtistSearch bool) int {
+	cleanQuery := strings.ToLower(cleanForSimilarity(query))
+	cleanArtist := strings.ToLower(cleanForSimilarity(artist))
+	cleanTitle := strings.ToLower(cleanForSimilarity(title))
+
+	if cleanQuery == "" {
+		return 0
+	}
+
+	// Priority 1: Exact matches
+	if cleanArtist == cleanQuery {
+		return 1000
+	}
+	if cleanTitle == cleanQuery {
+		return 900
+	}
+
+	// If in "Artists" mode or searching specifically by artist
+	if isArtistSearch {
+		if strings.HasPrefix(cleanArtist, cleanQuery) {
+			return 850
+		}
+		if strings.Contains(cleanArtist, cleanQuery) {
+			return 750
+		}
+
+		// Check word token overlap in artist
+		qWords := strings.Fields(cleanQuery)
+		aWords := strings.Fields(cleanArtist)
+		matched := 0
+		for _, qw := range qWords {
+			for _, aw := range aWords {
+				if qw == aw || strings.HasPrefix(aw, qw) || strings.HasPrefix(qw, aw) {
+					matched++
+					break
+				}
+			}
+		}
+		if len(qWords) > 0 && matched > 0 {
+			return 500 + (matched * 200) / len(qWords)
+		}
+
+		// Low fallback if artist doesn't match
+		return 50
+	}
+
+	// General search relevance:
+	score := 0
+	if cleanArtist == cleanQuery {
+		score = 800
+	} else if strings.HasPrefix(cleanArtist, cleanQuery) {
+		score = 700
+	} else if strings.Contains(cleanArtist, cleanQuery) {
+		score = 600
+	}
+
+	if cleanTitle == cleanQuery {
+		score = max(score, 750)
+	} else if strings.HasPrefix(cleanTitle, cleanQuery) {
+		score = max(score, 650)
+	} else if strings.Contains(cleanTitle, cleanQuery) {
+		score = max(score, 550)
+	}
+
+	// Word overlap
+	qWords := strings.Fields(cleanQuery)
+	allWords := strings.Fields(cleanArtist + " " + cleanTitle)
+	matched := 0
+	for _, qw := range qWords {
+		for _, w := range allWords {
+			if qw == w || strings.HasPrefix(w, qw) {
+				matched++
+				break
+			}
+		}
+	}
+	if len(qWords) > 0 && matched > 0 {
+		overlapScore := (matched * 400) / len(qWords)
+		score = max(score, overlapScore)
+	}
+
+	return score
 }
 
 func calculateSimilarity(targetTitle, targetArtist, candTitle, candArtist string) int {
@@ -2189,11 +2307,18 @@ func (a *API) handleOnlineSearch(w http.ResponseWriter, r *http.Request) {
 
 	wg.Wait()
 
-	// Rank results by similarity to query
+	isArtistSearch := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("type"))) == "artist" || strings.ToLower(strings.TrimSpace(r.URL.Query().Get("mode"))) == "artist"
+
+	// Rank results by similarity & search relevance to query
 	sort.SliceStable(results, func(i, j int) bool {
-		si := calculateSimilarity(query, query, results[i].Title, results[i].Artist)
-		sj := calculateSimilarity(query, query, results[j].Title, results[j].Artist)
-		return si > sj
+		si := calculateSearchRelevance(query, results[i].Title, results[i].Artist, isArtistSearch)
+		sj := calculateSearchRelevance(query, results[j].Title, results[j].Artist, isArtistSearch)
+		if si != sj {
+			return si > sj
+		}
+		simI := calculateSimilarity(query, query, results[i].Title, results[i].Artist)
+		simJ := calculateSimilarity(query, query, results[j].Title, results[j].Artist)
+		return simI > simJ
 	})
 
 	// Pagination support (limit and offset)
