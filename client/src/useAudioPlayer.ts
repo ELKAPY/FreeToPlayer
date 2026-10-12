@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Hls from 'hls.js';
 import {
   fetchPlaybackState,
   getAudioStreamUrl,
@@ -68,6 +69,7 @@ export function useAudioPlayer(tracks: Track[]) {
   const [queue, setQueue] = useState<Track[]>(tracks);
   const originalQueueRef = useRef<Track[]>(tracks);
   const isQueueRestoredRef = useRef<boolean>(false);
+  const hlsRef = useRef<Hls | null>(null);
 
   // App Settings Integration
   const [eqEnabled, setEqEnabledState] = useState<boolean>(() => getAppSettings().eqEnabled);
@@ -977,6 +979,36 @@ export function useAudioPlayer(tracks: Track[]) {
       const isSameTrack = currentTrackRef.current?.id === track.id && curOnline === newOnline;
       setCurrentTrack(track);
 
+      // Destroy existing HLS instance if switching streams
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
+      const attachStreamToAudio = (targetAudio: HTMLAudioElement, url: string, onReady?: () => void) => {
+        const isHlsStream = url.toLowerCase().includes('.m3u8');
+        if (isHlsStream && Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          hlsRef.current = hls;
+          hls.loadSource(url);
+          hls.attachMedia(targetAudio);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (onReady) onReady();
+          });
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) {
+              console.warn('HLS fatal error:', data.type);
+            }
+          });
+        } else {
+          targetAudio.src = url;
+          if (onReady) onReady();
+        }
+      };
+
       // Smooth volume fade transition if already playing a different track
       if (!audio.paused && !isSameTrack && crossfadeRef.current > 0) {
         const targetVol = isMutedRef.current ? 0 : volumeRef.current;
@@ -991,20 +1023,21 @@ export function useAudioPlayer(tracks: Track[]) {
             const streamUrl = (track as any).onlineStreamUrl
               ? (track as any).onlineStreamUrl
               : `${baseStreamUrl}?v=${track.fileSize || track.duration || Date.now()}`;
-            audio.src = streamUrl;
-            if (startTime > 0) {
-              const onMeta = () => {
-                try {
-                  audio.currentTime = startTime;
-                } catch (e) {}
-                audio.removeEventListener('loadedmetadata', onMeta);
-              };
-              audio.addEventListener('loadedmetadata', onMeta);
-            }
-            audio.volume = targetVol;
-            audio.play().catch(console.error);
-            setIsPlaying(true);
-            syncStateToBackend(track.id, startTime, true);
+            attachStreamToAudio(audio, streamUrl, () => {
+              if (startTime > 0) {
+                const onMeta = () => {
+                  try {
+                    audio.currentTime = startTime;
+                  } catch (e) {}
+                  audio.removeEventListener('loadedmetadata', onMeta);
+                };
+                audio.addEventListener('loadedmetadata', onMeta);
+              }
+              audio.volume = targetVol;
+              audio.play().catch(console.error);
+              setIsPlaying(true);
+              syncStateToBackend(track.id, startTime, true);
+            });
           }
         }, 30);
         return;
@@ -1015,16 +1048,17 @@ export function useAudioPlayer(tracks: Track[]) {
         const streamUrl = (track as any).onlineStreamUrl
           ? (track as any).onlineStreamUrl
           : `${baseStreamUrl}?v=${track.fileSize || track.duration || Date.now()}`;
-        audio.src = streamUrl;
-        if (startTime > 0) {
-          const onMeta = () => {
-            try {
-              audio.currentTime = startTime;
-            } catch (e) {}
-            audio.removeEventListener('loadedmetadata', onMeta);
-          };
-          audio.addEventListener('loadedmetadata', onMeta);
-        }
+        attachStreamToAudio(audio, streamUrl, () => {
+          if (startTime > 0) {
+            const onMeta = () => {
+              try {
+                audio.currentTime = startTime;
+              } catch (e) {}
+              audio.removeEventListener('loadedmetadata', onMeta);
+            };
+            audio.addEventListener('loadedmetadata', onMeta);
+          }
+        });
       } else if (startTime > 0) {
         try {
           audio.currentTime = startTime;
