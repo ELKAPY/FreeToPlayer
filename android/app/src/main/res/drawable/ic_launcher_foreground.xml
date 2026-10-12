@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Vinyl Disc outer ring -->
+    <path
+        android:fillColor="#06b6d4"
+        android:pathData="M54,18A36,36 0 1,0 54,90A36,36 0 1,0 54,18ZM54,82A28,28 0 1,1 54,26A28,28 0 1,1 54,82Z" />
+    <!-- Vinyl Disc center -->
+    <path
+        android:fillColor="#22d3ee"
+        android:pathData="M54,40A14,14 0 1,0 54,68A14,14 0 1,0 54,40ZM54,58A4,4 0 1,1 54,50A4,4 0 1,1 54,58Z" />
+    <!-- Headphones / Wave accent -->
+    <path
+        android:fillColor="#38bdf8"
+        android:pathData="M38,48L38,60M70,48L70,60"
+        android:strokeWidth="3"
+        android:strokeColor="#38bdf8" />
+</vector>

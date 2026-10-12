@@ -1,0 +1,36 @@
+# Set default behavior to automatically handle line endings
+* text=auto
+
+# Windows batch files must retain CRLF line endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts must retain LF line endings
+*.sh text eol=lf
+
+# Code files
+*.go text
+*.ts text
+*.tsx text
+*.js text
+*.jsx text
+*.json text
+*.css text
+*.html text
+*.md text
+*.py text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.webp binary
+*.gif binary
+*.mp3 binary
+*.flac binary
+*.wav binary
+*.ogg binary
+*.exe binary
+*.dll binary

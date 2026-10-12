@@ -1,0 +1,123 @@
+# ==============================================================================
+# FreeToPlayer - GitHub .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Sensitive User Credentials & Personal Tokens
+# ------------------------------------------------------------------------------
+yandex_token.txt
+youtube_cookies.txt
+youtube_playlist.txt
+*token*.txt
+*cookie*.txt
+*.env
+*.env.local
+*.env.*.local
+
+# ------------------------------------------------------------------------------
+# 2. Local User Library & Runtime Media Data
+# ------------------------------------------------------------------------------
+data/audio/*
+!data/audio/.gitkeep
+data/covers/*
+!data/covers/.gitkeep
+
+data/library.json
+data/state.json
+data/deleted_tracks.json
+data/liked_tracks.json
+data/version_preferences.json
+data/window_state.json
+data/youtube_config.json
+data/playlists.json
+data/*_status.json
+
+# WebView2 and Chromium Browser Profiles / Local Storage Caches
+data/app_profile/
+data/youtube_profile/
+data/yandex_login_profile/
+data/edge_login/
+EBWebView/
+
+# Temporary Scraped or Merged Playlists & Debug Scripts
+playlist_*.json
+merged_playlist.json
+download_progress.json
+inspect_*.py
+fast_collect.py
+merge_playlists.py
+sync_merged_to_dj.py
+
+# Duplicate python scripts inside data folder
+data/*.py
+
+# Obsidian Workspace and Plugin Data
+.obsidian/
+*/.obsidian/
+
+# ------------------------------------------------------------------------------
+# 3. Binaries, Compiled Executables & Build Artifacts
+# ------------------------------------------------------------------------------
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+FreeToPlayer.exe
+DJ-Player.exe
+server/dj-server.exe
+
+# Frontend Build Distributions
+client/dist/
+server/dist/
+dist/
+
+# Dependencies
+node_modules/
+client/node_modules/
+
+# ------------------------------------------------------------------------------
+# 4. Android Build Artifacts & IDE Files
+# ------------------------------------------------------------------------------
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/local.properties
+*.apk
+*.aab
+
+# ------------------------------------------------------------------------------
+# 5. Python Caches & Virtual Environments
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.playwright-mcp/
+
+# ------------------------------------------------------------------------------
+# 6. Logs & Diagnostics
+# ------------------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------------------------------------------------------------
+# 7. Operating System & Editor Metadata
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

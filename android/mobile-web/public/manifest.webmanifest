@@ -1,0 +1,20 @@
+{
+  "name": "DJ Player Mobile",
+  "short_name": "DJ Player",
+  "description": "Hi-Fi Музыкальный плеер для Android с онлайн-поиском и синхронизацией",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07080c",
+  "theme_color": "#07080c",
+  "categories": ["music", "audio", "entertainment"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
