@@ -16,25 +16,25 @@
     "FileFlags": "00",
     "FileOS": "040004",
     "FileType": "01",
-    "FileSubType": "00"
+    "FileSubtype": "00"
   },
   "StringFileInfo": {
-    "Comments": "FreeToPlayer",
-    "CompanyName": "FreeToPlayer",
-    "FileDescription": "FreeToPlayer",
+    "Comments": "FreeToPlayer - современный Hi-Fi аудиокомбайн для Windows",
+    "CompanyName": "FreeToPlayer OpenSource",
+    "FileDescription": "FreeToPlayer Music Player",
     "FileVersion": "1.0.0.0",
     "InternalName": "FreeToPlayer",
-    "LegalCopyright": "FreeToPlayer",
+    "LegalCopyright": "Copyright © 2026 FreeToPlayer Contributors. Released under GPLv3.",
+    "LegalTrademarks": "FreeToPlayer™",
     "OriginalFilename": "FreeToPlayer.exe",
     "ProductName": "FreeToPlayer",
     "ProductVersion": "1.0.0.0"
   },
   "VarFileInfo": {
     "Translation": {
-      "LangID": "0409",
+      "LangID": "0419",
       "CharsetID": "04B0"
     }
   },
-  "IconPath": "app_icon.ico",
-  "ManifestPath": ""
+  "IconPath": "..\\app_icon.ico"
 }

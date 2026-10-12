@@ -1,5 +1,7 @@
 package main
 
+//go:generate goversioninfo -icon=../app_icon.ico
+
 import (
 	"embed"
 	"encoding/json"
