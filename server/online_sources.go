@@ -2471,6 +2471,28 @@ func (a *API) handleOnlineAlbumTracks(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Album not found", http.StatusNotFound)
 }
 
+func (a *API) handleArtistPhoto(w http.ResponseWriter, r *http.Request) {
+	artist := strings.TrimSpace(r.URL.Query().Get("artist"))
+	if artist == "" {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"photo": ""})
+		return
+	}
+
+	photo := ""
+	if out, err := runOnlineAlbumsHelper(a.storage.baseDir, "get_artist_photo", artist); err == nil && len(out) > 0 {
+		var res struct {
+			Photo string `json:"photo"`
+		}
+		if err := json.Unmarshal(out, &res); err == nil {
+			photo = res.Photo
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"photo": photo})
+}
+
 func (a *API) handleOnlineStreamDeezer(w http.ResponseWriter, r *http.Request) {
 	title := strings.TrimSpace(r.URL.Query().Get("title"))
 	artist := strings.TrimSpace(r.URL.Query().Get("artist"))

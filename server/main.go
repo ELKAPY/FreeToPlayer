@@ -383,6 +383,7 @@ func main() {
 	mux.HandleFunc("/api/youtube/logout", api.handleYouTubeLogout)
 	mux.HandleFunc("/api/online/search", api.handleOnlineSearch)
 	mux.HandleFunc("/api/online/albums", api.handleOnlineAlbums)
+	mux.HandleFunc("/api/online/artist-photo", api.handleArtistPhoto)
 	mux.HandleFunc("/api/online/album-tracks", api.handleOnlineAlbumTracks)
 	mux.HandleFunc("/api/online/radio/top", api.handleRadioTop)
 	mux.HandleFunc("/api/online/radio/genre", api.handleRadioByGenre)

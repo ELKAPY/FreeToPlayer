@@ -28,7 +28,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { getCoverUrl } from '../api';
+import { fetchArtistPhoto, getCoverUrl } from '../api';
 import {
   getFavoritesTracks,
   getForgottenFavoritesTracks,
@@ -82,6 +82,85 @@ interface CollectionViewProps {
   initialAlbum?: string | null;
   initialPlaylistId?: string | null;
 }
+
+// Artist card with auto-fetched real artist photo from open music databases
+const ArtistCard: React.FC<{
+  artName: string;
+  artTracks: Track[];
+  onSelect: () => void;
+  onStartFlow?: (name: string) => void;
+}> = ({ artName, artTracks, onSelect, onStartFlow }) => {
+  const [photoUrl, setPhotoUrl] = useState<string>(() => {
+    try {
+      return localStorage.getItem(`dj_artist_photo_${artName}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    if (photoUrl) return;
+    let isMounted = true;
+    fetchArtistPhoto(artName).then((url) => {
+      if (isMounted && url) {
+        setPhotoUrl(url);
+        try {
+          localStorage.setItem(`dj_artist_photo_${artName}`, url);
+        } catch {}
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [artName, photoUrl]);
+
+  const sampleCover = artTracks.find((t) => t.hasCover);
+
+  return (
+    <div
+      onClick={onSelect}
+      className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] hover:border-cyan-500/30 transition-all cursor-pointer flex flex-col items-center text-center gap-2 group"
+    >
+      <div className="w-16 h-16 rounded-full bg-black/40 overflow-hidden border border-white/[0.08] relative group-hover:scale-105 transition-transform flex items-center justify-center shadow-md">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={artName}
+            className="w-full h-full object-cover"
+            onError={() => setPhotoUrl('')}
+          />
+        ) : sampleCover ? (
+          <img
+            src={getCoverUrl(sampleCover.id)}
+            alt={artName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Mic className="w-6 h-6 text-slate-500" />
+        )}
+      </div>
+      <h4 className="text-xs font-semibold text-white truncate w-full group-hover:text-cyan-400 transition-colors">
+        {artName}
+      </h4>
+      <span className="text-[10px] font-mono text-slate-500">
+        {artTracks.length} треков
+      </span>
+      {onStartFlow && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onStartFlow(artName);
+          }}
+          title={`Запустить поток: ${artName}`}
+          className="mt-1 px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-[10px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <Radio className="w-3 h-3 text-cyan-400" />
+          <span>Поток</span>
+        </button>
+      )}
+    </div>
+  );
+};
 
 export const CollectionView: React.FC<CollectionViewProps> = ({
   tracks,
@@ -776,50 +855,18 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
       {/* View: Artists Grid */}
       {collectionTab === 'artists' && !selectedArtist && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {artistsMap.map(([artName, artTracks]) => {
-            const sampleCover = artTracks.find((t) => t.hasCover);
-            return (
-              <div
-                key={artName}
-                onClick={() => {
-                  setSelectedArtist(artName);
-                  setCollectionTab('tracks');
-                }}
-                className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] hover:border-cyan-500/30 transition-all cursor-pointer flex flex-col items-center text-center gap-2 group"
-              >
-                <div className="w-16 h-16 rounded-full bg-black/40 overflow-hidden border border-white/[0.08] relative group-hover:scale-105 transition-transform flex items-center justify-center">
-                  {sampleCover ? (
-                    <img
-                      src={getCoverUrl(sampleCover.id)}
-                      alt={artName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Mic className="w-6 h-6 text-slate-500" />
-                  )}
-                </div>
-                <h4 className="text-xs font-semibold text-white truncate w-full group-hover:text-cyan-400 transition-colors">
-                  {artName}
-                </h4>
-                <span className="text-[10px] font-mono text-slate-500">
-                  {artTracks.length} треков
-                </span>
-                {onStartArtistFlow && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartArtistFlow(artName);
-                    }}
-                    title={`Запустить поток: ${artName}`}
-                    className="mt-1 px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-[10px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Radio className="w-3 h-3 text-cyan-400" />
-                    <span>Поток</span>
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {artistsMap.map(([artName, artTracks]) => (
+            <ArtistCard
+              key={artName}
+              artName={artName}
+              artTracks={artTracks}
+              onSelect={() => {
+                setSelectedArtist(artName);
+                setCollectionTab('tracks');
+              }}
+              onStartFlow={onStartArtistFlow}
+            />
+          ))}
         </div>
       )}
 

@@ -297,6 +297,19 @@ def search_deezer_tracks(query):
         sys.stderr.write(f"Deezer track search error: {e}\n")
     return tracks
 
+def get_artist_photo(artist_name):
+    try:
+        url = f"https://api.deezer.com/search/artist?q={requests.utils.quote(artist_name)}&limit=1"
+        resp = requests.get(url, headers=HEADERS, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json().get("data", [])
+            if data:
+                a = data[0]
+                return a.get("picture_xl") or a.get("picture_big") or a.get("picture_medium") or ""
+    except Exception as e:
+        sys.stderr.write(f"Deezer artist photo error: {e}\n")
+    return ""
+
 def main():
     if len(sys.argv) < 3:
         print("[]")
@@ -327,6 +340,9 @@ def main():
     elif action == "get_audius":
         res = get_audius_album_tracks(arg1)
         print(json.dumps(res, ensure_ascii=False))
+    elif action == "get_artist_photo":
+        res = get_artist_photo(arg1)
+        print(json.dumps({"photo": res}, ensure_ascii=False))
     else:
         print("[]")
 

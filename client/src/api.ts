@@ -153,6 +153,17 @@ export async function searchOnlineTracks(query: string, source: string = 'all', 
   }
 }
 
+export async function fetchArtistPhoto(artist: string): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/online/artist-photo?artist=${encodeURIComponent(artist)}`);
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data?.photo || '';
+  } catch {
+    return '';
+  }
+}
+
 export async function downloadOnlineTrack(item: OnlineTrack): Promise<{ success: boolean; track?: Track }> {
   const res = await fetch(`${API_BASE}/online/download`, {
     method: 'POST',
