@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/TailwindCSS-4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
+  <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License" />
 </p>
 
 ---
@@ -141,4 +141,4 @@ cd ..
 
 ## 📄 Лицензия
 
-Распространяется под лицензией **MIT**. Подробности в файле `LICENSE`.
+Распространяется под сильной copyleft-лицензией **GNU General Public License v3.0 (GPLv3)**. Любые производные работы и форки обязаны также сохранять открытый исходный код под лицензией GPLv3. Подробности в файле `LICENSE`.

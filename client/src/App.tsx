@@ -851,6 +851,8 @@ export function App() {
                 navigateTo('collection', { artist: art });
               }}
               onOpenVersions={handleOpenVersions}
+              onNavigateToTab={(tab, opts) => navigateTo(tab, opts)}
+              onUploadFiles={handleUploadFiles}
             />
           </div>
         )}

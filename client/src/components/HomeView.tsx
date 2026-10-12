@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Compass,
+  DownloadCloud,
   FastForward,
   FolderPlus,
   GripVertical,
@@ -18,8 +20,11 @@ import {
   Search,
   Shuffle,
   Sliders,
+  Sparkles,
   Timer,
   Trash2,
+  Upload,
+  Video,
   Volume2,
   VolumeX,
   X,
@@ -70,6 +75,8 @@ interface HomeViewProps {
   onStartArtistFlow?: (artist: string) => void;
   onSelectArtist?: (artist: string) => void;
   onOpenVersions?: (track: Track) => void;
+  onNavigateToTab?: (tab: 'home' | 'collection' | 'online' | 'settings', options?: any) => void;
+  onUploadFiles?: (files: FileList) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -105,6 +112,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onStartArtistFlow,
   onSelectArtist,
   onOpenVersions,
+  onNavigateToTab,
+  onUploadFiles,
 }) => {
   const { settings } = useAppSettings();
   const [queueSearch, setQueueSearch] = useState('');
@@ -543,7 +552,85 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           {/* Queue Tracks List */}
           <div className="flex-1 overflow-y-auto divide-y divide-white/[0.03] pr-1 mt-2">
-            {filteredQueue.length === 0 ? (
+            {tracks.length === 0 ? (
+              <div className="h-full flex flex-col justify-center items-center text-center p-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-3">
+                  <Sparkles className="w-6 h-6 text-cyan-400" />
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1">
+                  Добро пожаловать в FreeToPlayer!
+                </h3>
+                <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
+                  Ваша очередь пуста. Выберите удобный способ добавить или включить любимую музыку:
+                </p>
+
+                <div className="w-full max-w-md grid grid-cols-2 gap-2 text-left">
+                  {/* Option 1: Онлайн-Поиск и Радио */}
+                  <div
+                    onClick={() => onNavigateToTab?.('online')}
+                    className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-cyan-500/40 cursor-pointer transition-all group flex flex-col"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Compass className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-white">Онлайн-Поиск</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Поиск по Deezer, SoundCloud, Hitmo и 40k+ радиостанций
+                    </span>
+                  </div>
+
+                  {/* Option 2: Яндекс Музыка */}
+                  <div
+                    onClick={() => onNavigateToTab?.('settings', { category: 'accounts' })}
+                    className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-amber-500/40 cursor-pointer transition-all group flex flex-col"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <DownloadCloud className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-white">Яндекс Музыка</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Вход в Яндекс ID и авто-синхронизация плейлиста «Любимое»
+                    </span>
+                  </div>
+
+                  {/* Option 3: YouTube Music */}
+                  <div
+                    onClick={() => onNavigateToTab?.('settings', { category: 'accounts' })}
+                    className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-rose-500/40 cursor-pointer transition-all group flex flex-col"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Video className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-white">YouTube Music</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Вход через Google аккаунт и скачивание ваших треков
+                    </span>
+                  </div>
+
+                  {/* Option 4: Локальные треки */}
+                  <label className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-purple-500/40 cursor-pointer transition-all group flex flex-col">
+                    <input
+                      type="file"
+                      multiple
+                      accept="audio/*,.mp3,.flac,.wav,.ogg,.m4a"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          onUploadFiles?.(e.target.files);
+                        }
+                      }}
+                    />
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Upload className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-white">Открыть файлы</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Или перетащите аудиофайлы мышью прямо в окно плеера
+                    </span>
+                  </label>
+                </div>
+              </div>
+            ) : filteredQueue.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
                 Ничего не найдено
               </div>

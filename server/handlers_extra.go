@@ -150,14 +150,22 @@ func (a *API) handleYandexSync(w http.ResponseWriter, r *http.Request) {
 
 	scriptPath := filepath.Join(baseDir, "sync_yandex_live.py")
 	if _, err := os.Stat(scriptPath); err != nil {
-		scriptPath = filepath.Join(baseDir, "sync_merged_to_dj.py")
+		cwd, _ := os.Getwd()
+		alt := filepath.Join(cwd, "sync_yandex_live.py")
+		if _, errAlt := os.Stat(alt); errAlt == nil {
+			scriptPath = alt
+			baseDir = cwd
+		} else {
+			scriptPath = filepath.Join(baseDir, "sync_merged_to_dj.py")
+		}
 	}
 
 	// Clean previous status
 	statusFile := filepath.Join(baseDir, "data", "yandex_sync_status.json")
 	_ = os.Remove(statusFile)
 
-	cmd := exec.Command("python", scriptPath)
+	pythonExe := findPythonExecutable()
+	cmd := exec.Command(pythonExe, scriptPath)
 	cmd.Dir = baseDir
 	// Run silently in background with zero popup windows
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -202,6 +210,16 @@ func (a *API) handleYandexStatus(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+func findPythonExecutable() string {
+	candidates := []string{"python", "python3", "py"}
+	for _, c := range candidates {
+		if path, err := exec.LookPath(c); err == nil {
+			return path
+		}
+	}
+	return "python"
+}
+
 func (a *API) handleYouTubeSync(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -219,15 +237,24 @@ func (a *API) handleYouTubeSync(w http.ResponseWriter, r *http.Request) {
 
 	scriptPath := filepath.Join(baseDir, "sync_youtube_live.py")
 	if _, err := os.Stat(scriptPath); err != nil {
-		http.Error(w, "sync_youtube_live.py script not found", http.StatusNotFound)
-		return
+		// Look in current working directory
+		cwd, _ := os.Getwd()
+		alt := filepath.Join(cwd, "sync_youtube_live.py")
+		if _, errAlt := os.Stat(alt); errAlt == nil {
+			scriptPath = alt
+			baseDir = cwd
+		} else {
+			http.Error(w, "Файл sync_youtube_live.py не найден в директории приложения", http.StatusNotFound)
+			return
+		}
 	}
 
 	// Clean previous status
 	statusFile := filepath.Join(baseDir, "data", "youtube_sync_status.json")
 	_ = os.Remove(statusFile)
 
-	cmd := exec.Command("python", scriptPath)
+	pythonExe := findPythonExecutable()
+	cmd := exec.Command(pythonExe, scriptPath)
 	cmd.Dir = baseDir
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    true,
@@ -235,7 +262,7 @@ func (a *API) handleYouTubeSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Ошибка запуска Python: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

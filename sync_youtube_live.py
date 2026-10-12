@@ -20,12 +20,14 @@ LIKED_FILE = DATA_DIR / "liked_tracks.json"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 COVERS_DIR.mkdir(parents=True, exist_ok=True)
 
-def update_status(status, message, current=0, total=0, done=False, error=None):
+def update_status(status, message, current=0, total=0, track_progress=0, track_title="", done=False, error=None):
     data = {
         "status": status,
         "message": message,
         "current": current,
         "total": total,
+        "track_progress": track_progress,
+        "track_title": track_title,
         "done": done,
         "error": error,
         "timestamp": time.time()
@@ -68,10 +70,21 @@ def get_playlist_url():
                 return url
         except Exception:
             pass
-    return ""
+    # Default to Liked Music playlist
+    return "https://music.youtube.com/playlist?list=LM"
 
 def main():
-    import yt_dlp
+    try:
+        import yt_dlp
+    except ImportError:
+        update_status("installing", "Установка модуля yt-dlp...")
+        import subprocess
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp", "requests"])
+            import yt_dlp
+        except Exception as install_err:
+            update_status("error", f"Требуется установить yt-dlp: pip install yt-dlp ({install_err})", done=True, error=str(install_err))
+            return
 
     playlist_url = get_playlist_url()
     if not playlist_url:
@@ -208,12 +221,27 @@ def main():
         temp_dest = AUDIO_DIR / f"{track_id}_temp.mp3"
 
         # Download audio via yt_dlp
+        def dl_progress_hook(d):
+            if d.get('status') == 'downloading':
+                total_b = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
+                downloaded_b = d.get('downloaded_bytes') or 0
+                pct = int((downloaded_b / total_b * 100)) if total_b > 0 else 0
+                update_status(
+                    "downloading",
+                    f"Загрузка ({idx}/{total_count}): {artist} — {title}",
+                    current=idx,
+                    total=total_count,
+                    track_progress=pct,
+                    track_title=f"{artist} — {title}"
+                )
+
         dl_opts = {
             "format": "bestaudio/best",
             "outtmpl": str(temp_dest),
             "quiet": True,
             "no_warnings": True,
             "nocheckcertificate": True,
+            "progress_hooks": [dl_progress_hook],
         }
         if cookie_path:
             dl_opts["cookiefile"] = cookie_path

@@ -81,8 +81,8 @@ func runYandexLoginWindow(baseDir, dataDir string) {
 	`
 	w.Init(injectScript)
 
-	// Official Yandex Music Mobile OAuth URL
-	oauthURL := "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b9c8a63f73416"
+	// Official Yandex Music Mobile OAuth URL (Android Yandex Music client_id)
+	oauthURL := "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d"
 	w.Navigate(oauthURL)
 
 	w.Run()

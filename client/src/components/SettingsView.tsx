@@ -5,6 +5,7 @@ import {
   Clock,
   Copy,
   Download,
+  DownloadCloud,
   Edit3,
   ExternalLink,
   Folder,
@@ -516,6 +517,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const categories: { id: SettingsCategory; label: string; icon: React.ReactNode }[] = [
     { id: 'all', label: 'Все настройки', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'accounts', label: 'Аккаунты и Синхронизация', icon: <DownloadCloud className="w-4 h-4" /> },
     { id: 'audio', label: 'Звук и EQ', icon: <Headphones className="w-4 h-4" /> },
     { id: 'playback', label: 'Плеер и Очередь', icon: <Clock className="w-4 h-4" /> },
     { id: 'collection', label: 'Медиатека и Файлы', icon: <ListMusic className="w-4 h-4" /> },
@@ -1889,98 +1891,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         )}
 
         {/* ======================================================== */}
-        {/* 6. СИСТЕМА И ИНТЕГРАЦИИ (SYSTEM & WINDOW) */}
+        {/* 6. АККАУНТЫ И СИНХРОНИЗАЦИЯ (ACCOUNTS & SYNC) */}
         {/* ======================================================== */}
-        {isSectionVisible('system', ['система', 'окно', 'поверх', 'discord', 'яндекс', 'синхронизация', 'телефон', 'android', 'клавиши', 'хоткеи', 'сброс']) && (
+        {isSectionVisible('accounts', ['яндекс', 'yandex', 'youtube', 'ютуб', 'аккаунт', 'синхронизация', 'вход', 'токен', 'cookies', 'плейлист', 'плюс']) && (
           <div className="flex flex-col gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
             <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
               <div className="flex items-center gap-2 text-slate-200 font-bold text-xs uppercase tracking-wider">
-                <Sliders className="w-4 h-4 text-cyan-400" />
-                <span>Система, Окно и Интеграции</span>
-              </div>
-            </div>
-
-            {/* Discord Rich Presence */}
-            <div className="p-3.5 rounded-xl bg-black/20 border border-white/[0.04] flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-white">Discord Rich Presence (Статус в Discord)</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Транслирует играющую песню, исполнителя и обложку</p>
-                </div>
-                <button
-                  onClick={onToggleDiscord}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                    isDiscordEnabled ? 'bg-cyan-500' : 'bg-white/[0.1]'
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      isDiscordEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {isDiscordEnabled && (
-                <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
-                  <div>
-                    <span className="text-slate-300">Показывать время трека в статусе</span>
-                    <p className="text-[10px] text-slate-500">Таймкод и прошедшее время прослушивания</p>
-                  </div>
-                  <button
-                    onClick={() => updateSettings({ discordShowTimestamp: !settings.discordShowTimestamp })}
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                      settings.discordShowTimestamp ? 'bg-cyan-500' : 'bg-white/[0.1]'
-                    }`}
-                  >
-                    <div
-                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                        settings.discordShowTimestamp ? 'translate-x-4.5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Global Hotkeys */}
-            <div className="p-3.5 rounded-xl bg-black/20 border border-white/[0.04] flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-white">Глобальные горячие клавиши</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Управление воспроизведением с клавиатуры</p>
-                </div>
-                <button
-                  onClick={() => updateSettings({ enableGlobalHotkeys: !settings.enableGlobalHotkeys })}
-                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    settings.enableGlobalHotkeys ? 'bg-cyan-500' : 'bg-white/[0.1]'
-                  }`}
-                >
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                      settings.enableGlobalHotkeys ? 'translate-x-4.5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
-                  <span className="text-slate-400">Play / Pause</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">Пробел</kbd>
-                </div>
-                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
-                  <span className="text-slate-400">Перемотка</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">← / →</kbd>
-                </div>
-                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
-                  <span className="text-slate-400">Громкость</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">↑ / ↓</kbd>
-                </div>
-                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
-                  <span className="text-slate-400">Без звука</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">M</kbd>
-                </div>
+                <DownloadCloud className="w-4 h-4 text-amber-400" />
+                <span>Аккаунты и Синхронизация Медиатек</span>
               </div>
             </div>
 
@@ -2289,17 +2207,48 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     )}
                   </div>
 
+                  {/* Overall Playlist Progress Bar */}
                   {youtubeSyncStatus.total > 0 && !youtubeSyncStatus.done && (
-                    <div className="w-full h-2 bg-white/[0.08] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-300"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round((youtubeSyncStatus.current / youtubeSyncStatus.total) * 100)
-                          )}%`,
-                        }}
-                      />
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Общий прогресс плейлиста</span>
+                        <span className="font-mono font-bold text-rose-400">
+                          {Math.min(100, Math.round((youtubeSyncStatus.current / youtubeSyncStatus.total) * 100))}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-white/[0.08] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-300 rounded-full"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round((youtubeSyncStatus.current / youtubeSyncStatus.total) * 100)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Individual Current Track Progress Bar */}
+                  {!youtubeSyncStatus.done && (youtubeSyncStatus as any).track_progress !== undefined && (youtubeSyncStatus as any).track_progress > 0 && (
+                    <div className="flex flex-col gap-1 pt-2 border-t border-white/[0.06]">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-300 truncate max-w-[70%]">
+                          {(youtubeSyncStatus as any).track_title || 'Текущий трек'}
+                        </span>
+                        <span className="font-mono font-bold text-rose-400">
+                          {(youtubeSyncStatus as any).track_progress}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-rose-500 to-amber-400 transition-all duration-200 rounded-full"
+                          style={{
+                            width: `${Math.min(100, (youtubeSyncStatus as any).track_progress)}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2308,6 +2257,104 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <p className="text-[11px] text-slate-500 leading-relaxed">
                 Нажмите «Войти в YouTube», чтобы авторизоваться в Google/YouTube Music в один клик. После входа вы сможете скачивать ваш приватный плейлист «Понравившиеся» (<code className="text-slate-300 bg-white/[0.06] px-1.5 py-0.5 rounded">https://music.youtube.com/playlist?list=LM</code>) или любые другие плейлисты.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* 7. СИСТЕМА И ИНТЕГРАЦИИ (SYSTEM & WINDOW) */}
+        {/* ======================================================== */}
+        {isSectionVisible('system', ['система', 'окно', 'поверх', 'discord', 'телефон', 'android', 'клавиши', 'хоткеи', 'сброс']) && (
+          <div className="flex flex-col gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2 text-slate-200 font-bold text-xs uppercase tracking-wider">
+                <Sliders className="w-4 h-4 text-cyan-400" />
+                <span>Система, Окно и Интеграции</span>
+              </div>
+            </div>
+
+            {/* Discord Rich Presence */}
+            <div className="p-3.5 rounded-xl bg-black/20 border border-white/[0.04] flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-white">Discord Rich Presence (Статус в Discord)</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Транслирует играющую песню, исполнителя и обложку</p>
+                </div>
+                <button
+                  onClick={onToggleDiscord}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    isDiscordEnabled ? 'bg-cyan-500' : 'bg-white/[0.1]'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      isDiscordEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isDiscordEnabled && (
+                <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                  <div>
+                    <span className="text-slate-300">Показывать время трека в статусе</span>
+                    <p className="text-[10px] text-slate-500">Таймкод и прошедшее время прослушивания</p>
+                  </div>
+                  <button
+                    onClick={() => updateSettings({ discordShowTimestamp: !settings.discordShowTimestamp })}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                      settings.discordShowTimestamp ? 'bg-cyan-500' : 'bg-white/[0.1]'
+                    }`}
+                  >
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                        settings.discordShowTimestamp ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Global Hotkeys */}
+            <div className="p-3.5 rounded-xl bg-black/20 border border-white/[0.04] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-white">Глобальные горячие клавиши</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Управление воспроизведением с клавиатуры</p>
+                </div>
+                <button
+                  onClick={() => updateSettings({ enableGlobalHotkeys: !settings.enableGlobalHotkeys })}
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                    settings.enableGlobalHotkeys ? 'bg-cyan-500' : 'bg-white/[0.1]'
+                  }`}
+                >
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                      settings.enableGlobalHotkeys ? 'translate-x-4.5' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
+                  <span className="text-slate-400">Play / Pause</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">Пробел</kbd>
+                </div>
+                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
+                  <span className="text-slate-400">Перемотка</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">← / →</kbd>
+                </div>
+                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
+                  <span className="text-slate-400">Громкость</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">↑ / ↓</kbd>
+                </div>
+                <div className="p-2 rounded bg-black/30 border border-white/[0.04] flex items-center justify-between">
+                  <span className="text-slate-400">Без звука</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">M</kbd>
+                </div>
+              </div>
             </div>
 
             {/* Mobile / Android PWA */}

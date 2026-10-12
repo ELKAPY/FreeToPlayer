@@ -116,10 +116,8 @@ func parseRadioStations(data []byte) []RadioStation {
 			votes, _ = strconv.Atoi(v)
 		}
 
-		streamProxy := targetURL
-		if streamProxy == "" {
-			streamProxy = "/api/online/radio/stream?url=" + url.QueryEscape(targetURL)
-		}
+		// Always route radio streams through local proxy to bypass mixed-content and CORS blocks in WebView2
+		streamProxy := "/api/online/radio/stream?url=" + url.QueryEscape(targetURL)
 
 		stations = append(stations, RadioStation{
 			ID:          s.StationUUID,
@@ -258,6 +256,9 @@ func (a *API) handleRadioStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Support Range requests from HTML5 Audio
+	rangeHeader := r.Header.Get("Range")
+
 	req, err := http.NewRequest(r.Method, streamURL, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -265,6 +266,10 @@ func (a *API) handleRadioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 	req.Header.Set("Icy-MetaData", "1")
+	req.Header.Set("Accept", "*/*")
+	if rangeHeader != "" {
+		req.Header.Set("Range", rangeHeader)
+	}
 
 	// Use stream client with TLS InsecureSkipVerify for live icecast/shoutcast streams
 	resp, err := radioStreamClient.Do(req)
@@ -274,21 +279,46 @@ func (a *API) handleRadioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	// If source redirected or returned m3u8 playlist, handle or pass through
 	contentType := resp.Header.Get("Content-Type")
 	if contentType == "" || contentType == "application/octet-stream" {
-		contentType = "audio/mpeg"
+		if strings.HasSuffix(strings.ToLower(streamURL), ".m3u8") || strings.Contains(strings.ToLower(streamURL), "m3u8") {
+			contentType = "application/vnd.apple.mpegurl"
+		} else if strings.HasSuffix(strings.ToLower(streamURL), ".aac") {
+			contentType = "audio/aac"
+		} else if strings.HasSuffix(strings.ToLower(streamURL), ".ogg") {
+			contentType = "audio/ogg"
+		} else {
+			contentType = "audio/mpeg"
+		}
 	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "no-cache, no-store")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
+	if cr := resp.Header.Get("Content-Range"); cr != "" {
+		w.Header().Set("Content-Range", cr)
+	}
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+
+	w.WriteHeader(resp.StatusCode)
 
 	flusher, canFlush := w.(http.Flusher)
 	buf := make([]byte, 16384)
 	for {
 		n, rErr := resp.Body.Read(buf)
 		if n > 0 {
-			_, _ = w.Write(buf[:n])
+			_, wErr := w.Write(buf[:n])
+			if wErr != nil {
+				break
+			}
 			if canFlush {
 				flusher.Flush()
 			}

@@ -21,12 +21,14 @@ TOKEN_FILE = BASE_DIR / "yandex_token.txt"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 COVERS_DIR.mkdir(parents=True, exist_ok=True)
 
-def update_status(status, message, current=0, total=0, done=False, error=None):
+def update_status(status, message, current=0, total=0, track_progress=0, track_title="", done=False, error=None):
     data = {
         "status": status,
         "message": message,
         "current": current,
         "total": total,
+        "track_progress": track_progress,
+        "track_title": track_title,
         "done": done,
         "error": error,
         "timestamp": time.time()
@@ -50,6 +52,18 @@ def load_deleted():
     return set()
 
 def main():
+    try:
+        from yandex_music import Client
+    except ImportError:
+        update_status("installing", "Установка библиотеки yandex-music...")
+        import subprocess
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yandex-music", "requests"])
+            from yandex_music import Client
+        except Exception as install_err:
+            update_status("error", f"Требуется установить yandex-music: pip install yandex-music ({install_err})", done=True, error=str(install_err))
+            return
+
     token_path = TOKEN_FILE
     if not token_path.exists() and (DATA_DIR / "yandex_token.txt").exists():
         token_path = DATA_DIR / "yandex_token.txt"
@@ -161,15 +175,59 @@ def main():
             except Exception:
                 pass
 
-        # Download audio stream
-        try:
-            track.download(str(target_mp3), codec="mp3", bitrate_in_kbps=320)
-        except Exception as e:
+        # Download audio stream with progress reporting
+        def download_with_progress():
             try:
-                track.download(str(target_mp3))
-            except Exception as e2:
-                print(f"Failed to download {artist_name} - {title_name}: {e2}")
-                return False
+                # Try getting download info URL first to stream with progress
+                dl_info = track.get_download_info()
+                best = None
+                for info in dl_info:
+                    if info.codec == 'mp3':
+                        best = info
+                        if info.bitrate_in_kbps == 320:
+                            break
+                if not best and dl_info:
+                    best = dl_info[0]
+
+                if best and hasattr(best, 'get_direct_link'):
+                    direct_url = best.get_direct_link()
+                    if direct_url:
+                        with requests.get(direct_url, stream=True, timeout=20) as resp:
+                            if resp.status_code == 200:
+                                total_bytes = int(resp.headers.get('content-length', 0))
+                                dl_bytes = 0
+                                with open(target_mp3, 'wb') as audio_out:
+                                    for chunk in resp.iter_content(chunk_size=32768):
+                                        if chunk:
+                                            audio_out.write(chunk)
+                                            dl_bytes += len(chunk)
+                                            if total_bytes > 0:
+                                                pct = int((dl_bytes / total_bytes) * 100)
+                                                update_status(
+                                                    "downloading",
+                                                    f"Скачивание ({i+1}/{total_new}): {clean_name(artist_name)} — {clean_name(title_name)}",
+                                                    current=downloaded_count,
+                                                    total=total_new,
+                                                    track_progress=pct,
+                                                    track_title=f"{artist_name} — {title_name}"
+                                                )
+                                return True
+            except Exception as e_stream:
+                print(f"Direct stream failed for {title_name}, falling back to default download: {e_stream}")
+
+            try:
+                track.download(str(target_mp3), codec="mp3", bitrate_in_kbps=320)
+                return True
+            except Exception:
+                try:
+                    track.download(str(target_mp3))
+                    return True
+                except Exception as e2:
+                    print(f"Failed to download {artist_name} - {title_name}: {e2}")
+                    return False
+
+        if not download_with_progress():
+            return False
 
         file_size = target_mp3.stat().st_size if target_mp3.exists() else 0
         if file_size < 1000:
@@ -208,7 +266,7 @@ def main():
 
         return True
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = [executor.submit(download_one, item, i) for i, item in enumerate(new_tracks_to_download)]
         for f in as_completed(futures):
             f.result()

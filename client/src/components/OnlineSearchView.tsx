@@ -7,6 +7,7 @@ import {
   History,
   Layers,
   ListPlus,
+  Mic2,
   Music,
   Pause,
   Play,
@@ -15,6 +16,7 @@ import {
   Signal,
   Sliders,
   Sparkles,
+  Users,
   X,
 } from 'lucide-react';
 import {
@@ -68,10 +70,10 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
     return '';
   });
 
-  const [searchMode, setSearchMode] = useState<'tracks' | 'albums' | 'radio'>(() => {
+  const [searchMode, setSearchMode] = useState<'tracks' | 'albums' | 'artists' | 'radio'>(() => {
     try {
       const saved = sessionStorage.getItem('dj_session_online_mode') as any;
-      if (saved && ['tracks', 'albums', 'radio'].includes(saved)) {
+      if (saved && ['tracks', 'albums', 'artists', 'radio'].includes(saved)) {
         return saved;
       }
     } catch {}
@@ -236,14 +238,14 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
     onPlayOnlineTrack(virtualTrack);
   };
 
-  const performSearch = async (targetQuery: string, source: MusicSourceId, mode: 'tracks' | 'albums' | 'radio') => {
+  const performSearch = async (targetQuery: string, source: MusicSourceId, mode: 'tracks' | 'albums' | 'artists' | 'radio') => {
     const q = targetQuery.trim();
     if (!q) return;
 
     saveQueryToHistory(q);
     setIsSearching(true);
     try {
-      if (mode === 'tracks') {
+      if (mode === 'tracks' || mode === 'artists') {
         const data = await searchOnlineTracks(q, source);
         setTrackResults(Array.isArray(data) ? data : []);
       } else if (mode === 'albums') {
@@ -289,7 +291,7 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
     };
   }, [query, sourceFilter, searchMode, settings.liveSearchDebounce]);
 
-  const handleModeChange = (mode: 'tracks' | 'albums' | 'radio') => {
+  const handleModeChange = (mode: 'tracks' | 'albums' | 'artists' | 'radio') => {
     setSearchMode(mode);
     if (mode === 'radio') {
       if (radioStations.length === 0) {
@@ -526,6 +528,18 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
           </button>
 
           <button
+            onClick={() => handleModeChange('artists')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+              searchMode === 'artists'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Исполнители</span>
+          </button>
+
+          <button
             onClick={() => handleModeChange('radio')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
               searchMode === 'radio'
@@ -558,8 +572,8 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
         )}
       </div>
 
-      {/* Sources visual pills filter (Always visible when in Tracks or Albums mode) */}
-      {(searchMode === 'tracks' || searchMode === 'albums') && (
+      {/* Sources visual pills filter (Always visible when in Tracks, Albums or Artists mode) */}
+      {(searchMode === 'tracks' || searchMode === 'albums' || searchMode === 'artists') && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {sourceLabels.map((src) => {
             const isSelected = sourceFilter === src.id;
@@ -628,6 +642,8 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
                 ? 'Введите название песни или исполнителя (например, Король и Шут, Metallica, Кино)...'
                 : searchMode === 'albums'
                 ? 'Введите название альбома или группы (например, Master of Puppets, Linkin Park)...'
+                : searchMode === 'artists'
+                ? 'Введите имя исполнителя (например, Queen, Цой, Rammstein, Eminem)...'
                 : 'Поиск среди 40 000+ радиостанций (Maximum, Record, BBC, Kiss, Jazz)...'
             }
             className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 shadow-inner"
@@ -1176,6 +1192,182 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
               })}
             </div>
           )
+        ) : searchMode === 'artists' ? (
+          /* Artists Discography & Deduplicated Tracks */
+          (() => {
+            // Group track results by artist or display deduplicated tracks for the searched artist
+            const tracksByArtist = processedTrackResults;
+            const uniqueTitlesMap = new Map<string, OnlineTrack>();
+            for (const t of tracksByArtist) {
+              const norm = `${t.title.toLowerCase().trim()}`;
+              if (!uniqueTitlesMap.has(norm)) {
+                uniqueTitlesMap.set(norm, t);
+              }
+            }
+            const deduplicated = Array.from(uniqueTitlesMap.values());
+
+            if (deduplicated.length === 0) {
+              return (
+                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-slate-500 text-xs">
+                  <Users className="w-10 h-10 text-slate-600 mb-2 opacity-60" />
+                  <span>
+                    {isSearching
+                      ? 'Идет поиск композиций исполнителя...'
+                      : 'Введите имя исполнителя или группы в поле выше, чтобы открыть дискографию без повторов'}
+                  </span>
+                </div>
+              );
+            }
+
+            const mainArtist = deduplicated[0]?.artist || query;
+
+            return (
+              <div className="flex flex-col gap-4">
+                {/* Artist Banner Header */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent border border-cyan-500/20 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-14 h-14 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+                      {deduplicated[0]?.coverUrl ? (
+                        <img
+                          src={deduplicated[0].coverUrl}
+                          alt={mainArtist}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Mic2 className="w-6 h-6 text-cyan-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono font-semibold uppercase">
+                          Исполнитель
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {deduplicated.length} уникальных треков (без дубликатов)
+                        </span>
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate mt-0.5">
+                        {mainArtist}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (deduplicated.length > 0) {
+                        const firstTrack = makeVirtualTrack(deduplicated[0]);
+                        onPlayOnlineTrack(firstTrack);
+                        if (onAddOnlineTrackToQueue) {
+                          for (let i = 1; i < deduplicated.length; i++) {
+                            onAddOnlineTrackToQueue(makeVirtualTrack(deduplicated[i]));
+                          }
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer active:scale-95 transition-all shrink-0"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Включить всё</span>
+                  </button>
+                </div>
+
+                {/* Deduplicated tracks list */}
+                <div className="divide-y divide-white/[0.04]">
+                  {deduplicated.map((item, idx) => {
+                    const isCur = currentTrack?.id === item.id;
+                    const isDown = downloadedIds.has(item.id);
+                    const isDownloadingThis = downloadingId === item.id;
+
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => onPlayOnlineTrack(makeVirtualTrack(item))}
+                        className={`py-2 px-2.5 flex items-center justify-between gap-3 rounded-xl transition-all cursor-pointer group ${
+                          isCur ? 'bg-cyan-500/10 border border-cyan-500/30' : 'hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <span className="w-5 text-center text-[11px] font-mono text-slate-500 group-hover:hidden">
+                            {idx + 1}
+                          </span>
+                          <Play className="w-4 h-4 text-cyan-400 hidden group-hover:block fill-current shrink-0" />
+
+                          <div className="w-9 h-9 rounded-lg bg-black/40 overflow-hidden shrink-0 border border-white/[0.06] relative flex items-center justify-center">
+                            {item.coverUrl ? (
+                              <img
+                                src={item.coverUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Music className="w-4 h-4 text-slate-500" />
+                            )}
+                            {isCur && isPlaying && (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <h4
+                              className={`text-xs font-semibold truncate ${
+                                isCur ? 'text-cyan-400' : 'text-white group-hover:text-cyan-300'
+                              }`}
+                            >
+                              {item.title}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                              {item.artist} {item.album ? `• ${item.album}` : ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {item.sourceName && (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded-md border font-mono ${getSourceBadgeClass(
+                                item.source
+                              )}`}
+                            >
+                              {item.sourceName}
+                            </span>
+                          )}
+
+                          <span className="text-[11px] font-mono text-slate-400 w-10 text-right">
+                            {item.durStr || (item.duration > 0 ? formatTime(item.duration) : '')}
+                          </span>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(item);
+                            }}
+                            disabled={isDown || isDownloadingThis}
+                            title={isDown ? 'Скачано в коллекцию' : 'Скачать MP3'}
+                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                              isDown
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : 'bg-white/[0.04] text-slate-400 hover:text-white border-white/[0.06] hover:bg-white/[0.08]'
+                            }`}
+                          >
+                            {isDown ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : (
+                              <Download className={`w-3.5 h-3.5 ${isDownloadingThis ? 'animate-bounce' : ''}`} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()
         ) : (
           /* Radio Stations Results Grid */
           isLoadingRadio ? (

@@ -21,6 +21,7 @@ export type SettingsCategory =
   | 'playback'
   | 'collection'
   | 'online'
+  | 'accounts'
   | 'appearance'
   | 'system';
 
