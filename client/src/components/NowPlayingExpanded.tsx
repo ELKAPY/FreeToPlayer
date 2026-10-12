@@ -4,6 +4,7 @@ import {
   FastForward,
   Heart,
   Layers,
+  Maximize2,
   Mic2,
   Music2,
   Pause,
@@ -201,14 +202,33 @@ export const NowPlayingExpanded: React.FC<NowPlayingExpandedProps> = ({
           </button>
         </div>
 
-        {/* Quick Settings for Lyrics / Visualizer */}
-        <button
-          onClick={() => setIsQuickSettingsOpen(true)}
-          title="Настройки караоке, шрифта и эффектов"
-          className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white transition-all cursor-pointer"
-        >
-          <Sliders className="w-4 h-4" />
-        </button>
+        {/* Controls: Fullscreen F11 & Quick Settings for Lyrics */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const win = window as any;
+              if (typeof win.toggleFullscreen === 'function') {
+                win.toggleFullscreen();
+              } else if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+              } else {
+                document.exitFullscreen().catch(() => {});
+              }
+            }}
+            title="Полноэкранный режим без рамок (F11)"
+            className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white transition-all cursor-pointer"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsQuickSettingsOpen(true)}
+            title="Настройки караоке, шрифта и эффектов"
+            className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white transition-all cursor-pointer"
+          >
+            <Sliders className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Center Content: Either Big Album Art OR Synced Lyrics */}
