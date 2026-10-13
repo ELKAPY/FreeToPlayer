@@ -20,11 +20,11 @@
   },
   "StringFileInfo": {
     "Comments": "FreeToPlayer - современный Hi-Fi аудиокомбайн для Windows",
-    "CompanyName": "FreeToPlayer OpenSource",
+    "CompanyName": "ELKAPY",
     "FileDescription": "FreeToPlayer Music Player",
     "FileVersion": "1.0.0.0",
     "InternalName": "FreeToPlayer",
-    "LegalCopyright": "Copyright © 2026 FreeToPlayer Contributors. Released under GPLv3.",
+    "LegalCopyright": "Copyright © 2026 ELKAPY. Released under GPLv3.",
     "LegalTrademarks": "FreeToPlayer™",
     "OriginalFilename": "FreeToPlayer.exe",
     "ProductName": "FreeToPlayer",
