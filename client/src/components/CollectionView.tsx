@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import {
   ArrowDownAZ,
   ArrowUpAZ,
-  Calendar,
   Check,
   Clock,
   Disc,
