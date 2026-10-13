@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   ArrowDownAZ,
   ArrowUpAZ,
+  Calendar,
   Check,
   Clock,
   Disc,
@@ -61,7 +62,8 @@ export type CollectionTab =
   | 'favorites'
   | 'playlists'
   | 'artists'
-  | 'albums';
+  | 'albums'
+  | 'years';
 
 interface CollectionViewProps {
   tracks: Track[];
