@@ -442,22 +442,26 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
   const genresMap = useMemo(() => {
     const map = new Map<string, Track[]>();
     for (const t of tracks) {
-      let genre = 'Разное';
-      const text = `${t.title} ${t.album || ''} ${t.artist}`.toLowerCase();
-      if (/rock|рок|metallica|ac\/dc|queen|nirvana|linkin park|сплин|би-2|кино|король и шут/i.test(text)) {
-        genre = 'Рок / Метал';
-      } else if (/hip hop|rap|рэп|хип-хоп|eminem|баста|oxxxymiron|scriptonite|гуф/i.test(text)) {
-        genre = 'Хип-Хоп / Рэп';
-      } else if (/electronic|dance|edm|house|techno|synth|d&b|dubstep|электро/i.test(text)) {
-        genre = 'Электроника';
-      } else if (/pop|поп|диско|dance/i.test(text)) {
-        genre = 'Поп-музыка';
-      } else if (/chill|lo-fi|lofi|relax|acoustic|акустика/i.test(text)) {
-        genre = 'Lo-Fi / Акустика';
-      } else if (/jazz|blues|джаз|блюз/i.test(text)) {
-        genre = 'Джаз / Блюз';
-      } else if (/classical|классика|orchestra|piano|вальс/i.test(text)) {
-        genre = 'Классика';
+      let genre = t.genre ? t.genre.trim() : '';
+      if (!genre) {
+        const text = `${t.title} ${t.album || ''} ${t.artist}`.toLowerCase();
+        if (/rock|рок|metallica|ac\/dc|queen|nirvana|linkin park|сплин|би-2|кино|король и шут/i.test(text)) {
+          genre = 'Рок / Метал';
+        } else if (/hip hop|rap|рэп|хип-хоп|eminem|баста|oxxxymiron|scriptonite|гуф/i.test(text)) {
+          genre = 'Хип-Хоп / Рэп';
+        } else if (/electronic|dance|edm|house|techno|synth|d&b|dubstep|электро/i.test(text)) {
+          genre = 'Электроника';
+        } else if (/pop|поп|диско|dance/i.test(text)) {
+          genre = 'Поп-музыка';
+        } else if (/chill|lo-fi|lofi|relax|acoustic|акустика/i.test(text)) {
+          genre = 'Lo-Fi / Акустика';
+        } else if (/jazz|blues|джаз|блюз/i.test(text)) {
+          genre = 'Джаз / Блюз';
+        } else if (/classical|классика|orchestra|piano|вальс/i.test(text)) {
+          genre = 'Классика';
+        } else {
+          genre = 'Разное';
+        }
       }
 
       if (!map.has(genre)) {

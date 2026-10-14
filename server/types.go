@@ -8,6 +8,7 @@ type Track struct {
 	Artist          string    `json:"artist"`
 	Album           string    `json:"album"`
 	Year            int       `json:"year"`
+	Genre           string    `json:"genre,omitempty"`
 	Duration        float64   `json:"duration"` // in seconds
 	Format          string    `json:"format"`   // FLAC, WAV, MP3, M4A, OGG, etc.
 	IsLossless      bool      `json:"isLossless"`

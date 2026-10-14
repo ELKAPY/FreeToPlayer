@@ -4,6 +4,7 @@ export interface Track {
   artist: string;
   album: string;
   year: number;
+  genre?: string;
   duration: number; // in seconds
   format: string;   // FLAC, WAV, MP3, etc.
   isLossless: boolean;

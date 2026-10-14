@@ -30,13 +30,14 @@ func (a *API) handleUpdateTrack(w http.ResponseWriter, r *http.Request) {
 		Artist string `json:"artist"`
 		Album  string `json:"album"`
 		Year   int    `json:"year"`
+		Genre  string `json:"genre"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
 
-	if err := a.storage.UpdateTrackMetadata(id, body.Title, body.Artist, body.Album, body.Year); err != nil {
+	if err := a.storage.UpdateTrackMetadata(id, body.Title, body.Artist, body.Album, body.Year, body.Genre); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

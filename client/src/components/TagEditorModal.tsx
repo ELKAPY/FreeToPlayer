@@ -7,7 +7,7 @@ import { getTrackCoverSrc, searchCovers, setTrackCover, type CoverCandidate } fr
 interface TagEditorModalProps {
   track: Track | null;
   onClose: () => void;
-  onSave: (id: string, data: { title: string; artist: string; album: string; year?: number }) => Promise<void>;
+  onSave: (id: string, data: { title: string; artist: string; album: string; year?: number; genre?: string }) => Promise<void>;
   onCoverUpdated?: (updatedTrack: Track) => void;
 }
 
@@ -22,6 +22,7 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
   const [artist, setArtist] = useState(track?.artist || '');
   const [album, setAlbum] = useState(track?.album || '');
   const [year, setYear] = useState<string>(track?.year && track.year > 0 ? String(track.year) : '');
+  const [genre, setGenre] = useState<string>(track?.genre || '');
   const [isSaving, setIsSaving] = useState(false);
 
   // Cover management state
@@ -46,6 +47,7 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
         artist: artist.trim(),
         album: album.trim(),
         year: !isNaN(parsedYear) && parsedYear > 0 ? parsedYear : undefined,
+        genre: genre.trim() || undefined,
       });
       onClose();
     } finally {
@@ -296,6 +298,17 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
               value={year}
               onChange={(e) => setYear(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white font-mono focus:outline-none focus:border-cyan-500/60"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 mb-1 block">Жанр</label>
+            <input
+              type="text"
+              placeholder="например, Rock, Hip-Hop, Electronic, Jazz"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-cyan-500/60"
             />
           </div>
 

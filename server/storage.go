@@ -226,7 +226,7 @@ func (s *Storage) UpdateTrackDuration(id string, duration float64) {
 	}
 }
 
-func (s *Storage) UpdateTrackMetadata(id, title, artist, album string, year int) error {
+func (s *Storage) UpdateTrackMetadata(id, title, artist, album string, year int, genre ...string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -248,6 +248,9 @@ func (s *Storage) UpdateTrackMetadata(id, title, artist, album string, year int)
 	}
 	if year > 0 {
 		t.Year = year
+	}
+	if len(genre) > 0 && genre[0] != "" {
+		t.Genre = genre[0]
 	}
 
 	s.tracks[id] = t

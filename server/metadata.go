@@ -62,6 +62,9 @@ func ExtractMetadata(filePath string, originalName string) (Track, []byte, strin
 			if m.Year() > 0 {
 				track.Year = m.Year()
 			}
+			if strings.TrimSpace(m.Genre()) != "" {
+				track.Genre = strings.TrimSpace(m.Genre())
+			}
 
 			// Extract cover image
 			pic := m.Picture()
