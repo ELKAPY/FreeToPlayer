@@ -3,13 +3,13 @@
     "FileVersion": {
       "Major": 1,
       "Minor": 0,
-      "Patch": 1,
+      "Patch": 2,
       "Build": 0
     },
     "ProductVersion": {
       "Major": 1,
       "Minor": 0,
-      "Patch": 1,
+      "Patch": 2,
       "Build": 0
     },
     "FileFlagsMask": "3f",
@@ -22,13 +22,13 @@
     "Comments": "FreeToPlayer - современный Hi-Fi аудиокомбайн для Windows",
     "CompanyName": "ELKAPY",
     "FileDescription": "FreeToPlayer Music Player",
-    "FileVersion": "1.0.1.0",
+    "FileVersion": "1.0.2.0",
     "InternalName": "FreeToPlayer",
     "LegalCopyright": "Copyright © 2026 ELKAPY. Released under GPLv3.",
     "LegalTrademarks": "FreeToPlayer™",
     "OriginalFilename": "FreeToPlayer.exe",
     "ProductName": "FreeToPlayer",
-    "ProductVersion": "1.0.1.0"
+    "ProductVersion": "1.0.2.0"
   },
   "VarFileInfo": {
     "Translation": {
