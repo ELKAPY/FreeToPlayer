@@ -407,6 +407,12 @@ func main() {
 	mux.HandleFunc("/api/tracks/set-cover", api.handleSetTrackCover)
 	mux.HandleFunc("/api/tracks/replace-version", api.handleReplaceVersion)
 	mux.HandleFunc("/api/reorder", api.handleReorder)
+	// Auto-updater routes
+	mux.HandleFunc("/api/update/check", api.handleCheckUpdate)
+	mux.HandleFunc("/api/update/progress", api.handleUpdateProgress)
+	mux.HandleFunc("/api/update/apply", api.handleApplyUpdate)
+	mux.HandleFunc("/api/update/restart", api.handleRestartAndApply)
+
 	mux.HandleFunc("/api/edit-track/", api.handleUpdateTrack)
 	mux.HandleFunc("/api/audio-devices", api.handleAudioDevices)
 	mux.HandleFunc("/api/discord", func(w http.ResponseWriter, r *http.Request) {

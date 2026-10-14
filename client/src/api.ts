@@ -376,3 +376,42 @@ export async function searchRadioStations(query: string): Promise<RadioStation[]
     return [];
   }
 }
+
+// Auto-updater API endpoints
+export async function checkForAppUpdates(): Promise<{ success: boolean; update?: import('./types').AppUpdateInfo; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/update/check`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Ошибка проверки обновлений' };
+  }
+}
+
+export async function fetchUpdateProgress(): Promise<import('./types').AppUpdateProgress> {
+  try {
+    const res = await fetch(`${API_BASE}/update/progress`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return {
+      status: 'error',
+      percent: 0,
+      downloaded: 0,
+      total: 0,
+      message: 'Ошибка соединения с модулем обновления',
+    };
+  }
+}
+
+export async function startDownloadUpdate(): Promise<{ success: boolean; message?: string }> {
+  const res = await fetch(`${API_BASE}/update/apply`, { method: 'POST' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+export async function restartAndInstallUpdate(): Promise<{ success: boolean; message?: string }> {
+  const res = await fetch(`${API_BASE}/update/restart`, { method: 'POST' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}

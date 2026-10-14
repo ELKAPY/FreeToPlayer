@@ -27,10 +27,14 @@ import {
   X,
 } from 'lucide-react';
 import {
+  checkForAppUpdates,
   fetchAutoCovers,
   fetchStorageStats,
+  fetchUpdateProgress,
   openStorageFolder,
+  restartAndInstallUpdate,
   setStoragePath,
+  startDownloadUpdate,
 } from '../api';
 import { clearPlayStats } from '../favorites';
 import { clearLyricsCache, getLyricsCacheSize } from '../lyrics';
@@ -212,6 +216,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [networkInfo, setNetworkInfo] = useState<{ port: number; ips: string[]; primaryIp: string } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Auto-updater state
+  const [updateInfo, setUpdateInfo] = useState<import('../types').AppUpdateInfo | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<import('../types').AppUpdateProgress | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isDownloadingUpdate, setIsDownloadingUpdate] = useState(false);
+
   // Fetch initial accounts status & network info
   useEffect(() => {
     fetch('/api/network-info')
@@ -344,6 +354,70 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       if (interval) clearInterval(interval);
     };
   }, [isSyncingYouTube, onRefreshTracks]);
+
+  // Updater progress polling
+  useEffect(() => {
+    let interval: any = null;
+    if (isDownloadingUpdate) {
+      interval = setInterval(async () => {
+        try {
+          const prog = await fetchUpdateProgress();
+          setUpdateProgress(prog);
+          if (prog.status === 'ready' || prog.status === 'error') {
+            setIsDownloadingUpdate(false);
+            clearInterval(interval);
+          }
+        } catch {
+          setIsDownloadingUpdate(false);
+          clearInterval(interval);
+        }
+      }, 500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isDownloadingUpdate]);
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await checkForAppUpdates();
+      if (res.success && res.update) {
+        setUpdateInfo(res.update);
+        if (res.update.hasUpdate) {
+          if (onToast) onToast(`Найдено обновление: v${res.update.latestVersion}!`);
+        } else {
+          if (onToast) onToast('У вас установлена самая актуальная версия FreeToPlayer');
+        }
+      } else {
+        if (onToast) onToast(res.error || 'Не удалось проверить обновления');
+      }
+    } catch (err: any) {
+      if (onToast) onToast('Ошибка при проверке обновлений');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleStartDownloadUpdate = async () => {
+    setIsDownloadingUpdate(true);
+    try {
+      await startDownloadUpdate();
+      if (onToast) onToast('Загрузка обновления началась...');
+    } catch {
+      setIsDownloadingUpdate(false);
+      if (onToast) onToast('Ошибка запуска скачивания обновления');
+    }
+  };
+
+  const handleRestartAndInstall = async () => {
+    try {
+      if (onToast) onToast('Перезапуск FreeToPlayer с установкой новой версии...');
+      await restartAndInstallUpdate();
+    } catch {
+      alert('Ошибка при перезапуске для установки обновления');
+    }
+  };
 
   const handleLoginYandex = async () => {
     try {
@@ -2355,6 +2429,100 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono">M</kbd>
                 </div>
               </div>
+            </div>
+
+            {/* Auto-Updater Section (Native 1-click updates) */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/20 via-black/30 to-purple-950/20 border border-cyan-500/20 flex flex-col gap-3.5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+                    <RefreshCw className={`w-5 h-5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <span>Нативные обновления программы</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        v{updateInfo?.currentVersion || '1.0.1'}
+                      </span>
+                      {updateInfo?.hasUpdate && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                          Доступна v{updateInfo.latestVersion}
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Проверка новых релизов на GitHub и бесшовное обновление в один клик
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleCheckForUpdates}
+                    disabled={isCheckingUpdate || isDownloadingUpdate}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 border border-white/[0.08] text-xs font-semibold cursor-pointer active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin text-cyan-400' : ''}`} />
+                    <span>{isCheckingUpdate ? 'Проверка...' : 'Проверить обновления'}</span>
+                  </button>
+
+                  {updateInfo?.hasUpdate && !updateProgress && (
+                    <button
+                      onClick={handleStartDownloadUpdate}
+                      disabled={isDownloadingUpdate}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Скачать v{updateInfo.latestVersion}</span>
+                    </button>
+                  )}
+
+                  {updateProgress?.status === 'ready' && (
+                    <button
+                      onClick={handleRestartAndInstall}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 cursor-pointer active:scale-95 transition-all animate-pulse"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Установить и перезапустить</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress & Status */}
+              {updateProgress && updateProgress.status !== 'idle' && (
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.08] flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={`font-semibold ${updateProgress.status === 'error' ? 'text-rose-400' : updateProgress.status === 'ready' ? 'text-emerald-300' : 'text-cyan-300'}`}>
+                      {updateProgress.message}
+                    </span>
+                    {updateProgress.total > 0 && (
+                      <span className="font-mono text-slate-400 text-xs">
+                        {Math.round(updateProgress.percent)}%
+                      </span>
+                    )}
+                  </div>
+
+                  {updateProgress.total > 0 && updateProgress.status === 'downloading' && (
+                    <div className="w-full h-2 bg-white/[0.08] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-200 rounded-full"
+                        style={{ width: `${Math.min(100, Math.round(updateProgress.percent))}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Release notes preview if update found */}
+              {updateInfo?.hasUpdate && updateInfo.releaseNotes && (
+                <div className="p-3 rounded-xl bg-black/30 border border-white/[0.04] text-xs text-slate-300 flex flex-col gap-1 max-h-36 overflow-y-auto">
+                  <span className="font-semibold text-white">Что нового в {updateInfo.releaseName || `v${updateInfo.latestVersion}`}:</span>
+                  <div className="text-[11px] text-slate-400 whitespace-pre-line leading-relaxed">
+                    {updateInfo.releaseNotes}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Mobile / Android PWA */}

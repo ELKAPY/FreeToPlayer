@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  checkForAppUpdates,
   deleteTrack,
   dislikeVersion,
+  fetchUpdateProgress,
+  restartAndInstallUpdate,
+  startDownloadUpdate,
   editTrackMetadata,
   fetchArtistFlow,
   fetchTracks,
@@ -67,6 +71,49 @@ export function App() {
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState<boolean>(false);
   const [isAudioQuickSettingsOpen, setIsAudioQuickSettingsOpen] = useState<boolean>(false);
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState<boolean>(false);
+
+  // Background update check on startup
+  const [availableUpdate, setAvailableUpdate] = useState<import('./types').AppUpdateInfo | null>(null);
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState<import('./types').AppUpdateProgress | null>(null);
+  const [isUpdatingFromBanner, setIsUpdatingFromBanner] = useState(false);
+
+  useEffect(() => {
+    // Check for updates 3 seconds after launch silently
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkForAppUpdates();
+        if (res.success && res.update && res.update.hasUpdate) {
+          setAvailableUpdate(res.update);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleStartBannerUpdate = async () => {
+    if (!availableUpdate) return;
+    setIsUpdatingFromBanner(true);
+    try {
+      await startDownloadUpdate();
+      const interval = setInterval(async () => {
+        try {
+          const prog = await fetchUpdateProgress();
+          setUpdateDownloadProgress(prog);
+          if (prog.status === 'ready') {
+            clearInterval(interval);
+          } else if (prog.status === 'error') {
+            clearInterval(interval);
+            setIsUpdatingFromBanner(false);
+          }
+        } catch {
+          clearInterval(interval);
+          setIsUpdatingFromBanner(false);
+        }
+      }, 500);
+    } catch {
+      setIsUpdatingFromBanner(false);
+    }
+  };
 
   // Navigation History Stack (Back/Forward)
   const [navHistory, setNavHistory] = useState<NavState[]>([{ tab: 'home' }]);
@@ -807,6 +854,60 @@ export function App() {
         <div className="fixed top-16 right-6 z-50 px-4 py-2 rounded-xl bg-[#090a0f] border border-white/[0.1] text-cyan-300 text-xs font-semibold shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Global Available Update Notification Banner */}
+      {availableUpdate && availableUpdate.hasUpdate && (
+        <div className="sticky top-0 z-40 px-4 py-2 bg-gradient-to-r from-cyan-950/90 via-slate-900/90 to-purple-950/90 border-b border-cyan-500/30 backdrop-blur-md flex items-center justify-between gap-3 text-xs shadow-lg animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0" />
+            <div className="truncate text-slate-200">
+              <span className="font-bold text-white">Доступно обновление FreeToPlayer v{availableUpdate.latestVersion}!</span>{' '}
+              <span className="text-slate-400 hidden sm:inline">(у вас v{availableUpdate.currentVersion})</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {updateDownloadProgress?.status === 'ready' ? (
+              <button
+                onClick={() => restartAndInstallUpdate()}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 cursor-pointer active:scale-95 transition-all animate-pulse"
+              >
+                Установить и перезапустить
+              </button>
+            ) : isUpdatingFromBanner ? (
+              <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-xl border border-white/10 font-mono text-cyan-300 text-xs">
+                <span>{updateDownloadProgress?.message || 'Скачивание...'}</span>
+                {updateDownloadProgress?.percent !== undefined && updateDownloadProgress.percent > 0 && (
+                  <span>{Math.round(updateDownloadProgress.percent)}%</span>
+                )}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleStartBannerUpdate}
+                  className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer active:scale-95 transition-all"
+                >
+                  Обновить сейчас
+                </button>
+                <button
+                  onClick={() => navigateTo('settings', { category: 'system' })}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/[0.08] text-xs cursor-pointer active:scale-95 transition-all"
+                >
+                  Подробнее
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => setAvailableUpdate(null)}
+              title="Закрыть уведомление"
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.1] transition-colors"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

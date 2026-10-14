@@ -130,3 +130,24 @@ export interface RadioStation {
 }
 
 export type ViewTab = 'home' | 'collection' | 'online' | 'settings';
+
+export interface AppUpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+  releaseName: string;
+  releaseNotes: string;
+  downloadUrl: string;
+  fileName: string;
+  fileSize: number;
+  publishedAt: string;
+}
+
+export interface AppUpdateProgress {
+  status: 'idle' | 'checking' | 'downloading' | 'ready' | 'installing' | 'error';
+  percent: number;
+  downloaded: number;
+  total: number;
+  message: string;
+  error?: string;
+}
