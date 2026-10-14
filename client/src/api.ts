@@ -112,7 +112,7 @@ export async function openStorageFolder(): Promise<void> {
 
 export async function editTrackMetadata(
   id: string,
-  data: { title: string; artist: string; album: string }
+  data: { title: string; artist: string; album: string; year?: number }
 ): Promise<boolean> {
   const res = await fetch(`${API_BASE}/edit-track/${id}`, {
     method: 'POST',

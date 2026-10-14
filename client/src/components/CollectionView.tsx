@@ -71,7 +71,7 @@ interface CollectionViewProps {
   isPlaying: boolean;
   onPlayTrack: (track: Track, currentFilteredList?: Track[]) => void;
   onDeleteTrack: (id: string) => void;
-  onEditTrack: (id: string, data: { title: string; artist: string; album: string }) => Promise<void>;
+  onEditTrack: (id: string, data: { title: string; artist: string; album: string; year?: number }) => Promise<void>;
   onOpenUploadDialog: () => void;
   onRefresh: () => Promise<void>;
   isRefreshing?: boolean;

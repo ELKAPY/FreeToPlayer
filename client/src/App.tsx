@@ -468,7 +468,7 @@ export function App() {
     }
   };
 
-  const handleEditTrack = async (id: string, data: { title: string; artist: string; album: string }) => {
+  const handleEditTrack = async (id: string, data: { title: string; artist: string; album: string; year?: number }) => {
     try {
       const ok = await editTrackMetadata(id, data);
       if (ok) {

@@ -7,7 +7,7 @@ import { getTrackCoverSrc, searchCovers, setTrackCover, type CoverCandidate } fr
 interface TagEditorModalProps {
   track: Track | null;
   onClose: () => void;
-  onSave: (id: string, data: { title: string; artist: string; album: string }) => Promise<void>;
+  onSave: (id: string, data: { title: string; artist: string; album: string; year?: number }) => Promise<void>;
   onCoverUpdated?: (updatedTrack: Track) => void;
 }
 
@@ -21,6 +21,7 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
   const [title, setTitle] = useState(track?.title || '');
   const [artist, setArtist] = useState(track?.artist || '');
   const [album, setAlbum] = useState(track?.album || '');
+  const [year, setYear] = useState<string>(track?.year && track.year > 0 ? String(track.year) : '');
   const [isSaving, setIsSaving] = useState(false);
 
   // Cover management state
@@ -38,11 +39,13 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
     e.preventDefault();
     if (!title.trim() || !artist.trim()) return;
     setIsSaving(true);
+    const parsedYear = parseInt(year.trim(), 10);
     try {
       await onSave(currentTrack.id, {
         title: title.trim(),
         artist: artist.trim(),
         album: album.trim(),
+        year: !isNaN(parsedYear) && parsedYear > 0 ? parsedYear : undefined,
       });
       onClose();
     } finally {
@@ -280,6 +283,19 @@ export const TagEditorModal: React.FC<TagEditorModalProps> = ({
               value={album}
               onChange={(e) => setAlbum(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-cyan-500/60"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 mb-1 block">Год выпуска</label>
+            <input
+              type="number"
+              min="1900"
+              max="2099"
+              placeholder="например, 2024"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white font-mono focus:outline-none focus:border-cyan-500/60"
             />
           </div>
 
