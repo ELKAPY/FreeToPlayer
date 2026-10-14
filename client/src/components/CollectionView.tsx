@@ -62,7 +62,8 @@ export type CollectionTab =
   | 'playlists'
   | 'artists'
   | 'albums'
-  | 'years';
+  | 'years'
+  | 'genres';
 
 interface CollectionViewProps {
   tracks: Track[];
@@ -220,6 +221,21 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
     return null;
   });
 
+  const [selectedYear, setSelectedYear] = useState<number | null>(() => {
+    try {
+      const y = sessionStorage.getItem('dj_session_collection_year');
+      return y ? parseInt(y, 10) : null;
+    } catch {}
+    return null;
+  });
+
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('dj_session_collection_genre') || null;
+    } catch {}
+    return null;
+  });
+
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(() => {
     const plId = initialPlaylistId || sessionStorage.getItem('dj_session_collection_playlist_id');
     if (plId) {
@@ -265,6 +281,26 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
       }
     } catch {}
   }, [selectedAlbum]);
+
+  useEffect(() => {
+    try {
+      if (selectedYear !== null) {
+        sessionStorage.setItem('dj_session_collection_year', String(selectedYear));
+      } else {
+        sessionStorage.removeItem('dj_session_collection_year');
+      }
+    } catch {}
+  }, [selectedYear]);
+
+  useEffect(() => {
+    try {
+      if (selectedGenre) {
+        sessionStorage.setItem('dj_session_collection_genre', selectedGenre);
+      } else {
+        sessionStorage.removeItem('dj_session_collection_genre');
+      }
+    } catch {}
+  }, [selectedGenre]);
 
   useEffect(() => {
     try {
@@ -389,6 +425,49 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
   }, [tracks]);
 
+  // Group by Years
+  const yearsMap = useMemo(() => {
+    const map = new Map<number, Track[]>();
+    for (const t of tracks) {
+      const y = t.year && t.year > 1900 ? t.year : 0;
+      if (!map.has(y)) {
+        map.set(y, []);
+      }
+      map.get(y)!.push(t);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[0] - a[0]);
+  }, [tracks]);
+
+  // Group by Genres (detected from tags or album/title hints)
+  const genresMap = useMemo(() => {
+    const map = new Map<string, Track[]>();
+    for (const t of tracks) {
+      let genre = 'Разное';
+      const text = `${t.title} ${t.album || ''} ${t.artist}`.toLowerCase();
+      if (/rock|рок|metallica|ac\/dc|queen|nirvana|linkin park|сплин|би-2|кино|король и шут/i.test(text)) {
+        genre = 'Рок / Метал';
+      } else if (/hip hop|rap|рэп|хип-хоп|eminem|баста|oxxxymiron|scriptonite|гуф/i.test(text)) {
+        genre = 'Хип-Хоп / Рэп';
+      } else if (/electronic|dance|edm|house|techno|synth|d&b|dubstep|электро/i.test(text)) {
+        genre = 'Электроника';
+      } else if (/pop|поп|диско|dance/i.test(text)) {
+        genre = 'Поп-музыка';
+      } else if (/chill|lo-fi|lofi|relax|acoustic|акустика/i.test(text)) {
+        genre = 'Lo-Fi / Акустика';
+      } else if (/jazz|blues|джаз|блюз/i.test(text)) {
+        genre = 'Джаз / Блюз';
+      } else if (/classical|классика|orchestra|piano|вальс/i.test(text)) {
+        genre = 'Классика';
+      }
+
+      if (!map.has(genre)) {
+        map.set(genre, []);
+      }
+      map.get(genre)!.push(t);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
+  }, [tracks]);
+
   // Base list depending on active section
   const baseTracks = useMemo(() => {
     if (selectedSmartPlaylist === 'most_played') {
@@ -421,6 +500,24 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
 
     if (selectedAlbum) {
       list = list.filter((t) => (t.album && t.album !== 'Unknown Album' ? t.album : 'Без альбома') === selectedAlbum);
+    }
+
+    if (selectedYear !== null) {
+      list = list.filter((t) => (t.year || 0) === selectedYear);
+    }
+
+    if (selectedGenre) {
+      list = list.filter((t) => {
+        const text = `${t.title} ${t.album || ''} ${t.artist}`.toLowerCase();
+        if (selectedGenre === 'Рок / Метал') return /rock|рок|metallica|ac\/dc|queen|nirvana|linkin park|сплин|би-2|кино|король и шут/i.test(text);
+        if (selectedGenre === 'Хип-Хоп / Рэп') return /hip hop|rap|рэп|хип-хоп|eminem|баста|oxxxymiron|scriptonite|гуф/i.test(text);
+        if (selectedGenre === 'Электроника') return /electronic|dance|edm|house|techno|synth|d&b|dubstep|электро/i.test(text);
+        if (selectedGenre === 'Поп-музыка') return /pop|поп|диско|dance/i.test(text);
+        if (selectedGenre === 'Lo-Fi / Акустика') return /chill|lo-fi|lofi|relax|acoustic|акустика/i.test(text);
+        if (selectedGenre === 'Джаз / Блюз') return /jazz|blues|джаз|блюз/i.test(text);
+        if (selectedGenre === 'Классика') return /classical|классика|orchestra|piano|вальс/i.test(text);
+        return true;
+      });
     }
 
     // Filter chips
@@ -518,11 +615,20 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
   const resetSubSelections = () => {
     setSelectedArtist(null);
     setSelectedAlbum(null);
+    setSelectedYear(null);
+    setSelectedGenre(null);
     setSelectedPlaylist(null);
     setSelectedSmartPlaylist(null);
   };
 
-  const hasActiveSubSelection = !!(selectedArtist || selectedAlbum || selectedPlaylist || selectedSmartPlaylist);
+  const hasActiveSubSelection = !!(
+    selectedArtist ||
+    selectedAlbum ||
+    selectedYear !== null ||
+    selectedGenre ||
+    selectedPlaylist ||
+    selectedSmartPlaylist
+  );
 
   return (
     <div className="w-full max-w-[1720px] mx-auto px-2 sm:px-4 lg:px-6 py-4 select-none">
@@ -621,6 +727,20 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
             <div className="flex items-center gap-1.5 font-semibold text-cyan-300">
               <Disc className="w-3.5 h-3.5" />
               <span>Альбом: {selectedAlbum}</span>
+            </div>
+          )}
+
+          {selectedYear !== null && (
+            <div className="flex items-center gap-1.5 font-semibold text-purple-300">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Год: {selectedYear > 0 ? `${selectedYear} год` : 'Без года'}</span>
+            </div>
+          )}
+
+          {selectedGenre && (
+            <div className="flex items-center gap-1.5 font-semibold text-emerald-300">
+              <Flame className="w-3.5 h-3.5" />
+              <span>Жанр: {selectedGenre}</span>
             </div>
           )}
 
@@ -723,6 +843,36 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
           >
             <Disc className="w-4 h-4 text-amber-400" />
             <span>Альбомы ({albumsMap.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setCollectionTab('years');
+              resetSubSelections();
+            }}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+              collectionTab === 'years' && !hasActiveSubSelection
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-purple-300 hover:bg-purple-500/10'
+            }`}
+          >
+            <Clock className="w-4 h-4 text-purple-400" />
+            <span>Года ({yearsMap.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setCollectionTab('genres');
+              resetSubSelections();
+            }}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+              collectionTab === 'genres' && !hasActiveSubSelection
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-emerald-400" />
+            <span>Жанры ({genresMap.length})</span>
           </button>
         </div>
 
@@ -906,6 +1056,103 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
                     {albTracks.length} треков
                   </span>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* View: Years Grid */}
+      {collectionTab === 'years' && selectedYear === null && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+          {yearsMap.map(([yearVal, yearTracks]) => {
+            const sampleCover = yearTracks.find((t) => t.hasCover);
+            return (
+              <div
+                key={yearVal}
+                onClick={() => {
+                  setSelectedYear(yearVal);
+                  setCollectionTab('tracks');
+                }}
+                className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.07] border border-white/[0.05] hover:border-purple-500/40 transition-all cursor-pointer flex flex-col items-center text-center gap-2.5 group"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center overflow-hidden relative group-hover:scale-105 transition-transform">
+                  {sampleCover ? (
+                    <img
+                      src={getCoverUrl(sampleCover.id)}
+                      alt={String(yearVal)}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                  ) : (
+                    <Clock className="w-7 h-7 text-purple-400" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                    <span className="font-mono font-extrabold text-white text-sm">
+                      {yearVal > 0 ? yearVal : '—'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                    {yearVal > 0 ? `${yearVal} год` : 'Без года'}
+                  </h4>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    {yearTracks.length} треков
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* View: Genres Grid */}
+      {collectionTab === 'genres' && !selectedGenre && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+          {genresMap.map(([genreName, genreTracks]) => {
+            const sampleCover = genreTracks.find((t) => t.hasCover);
+            return (
+              <div
+                key={genreName}
+                onClick={() => {
+                  setSelectedGenre(genreName);
+                  setCollectionTab('tracks');
+                }}
+                className="p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.07] border border-white/[0.05] hover:border-emerald-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                    {sampleCover ? (
+                      <img
+                        src={getCoverUrl(sampleCover.id)}
+                        alt={genreName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Flame className="w-6 h-6 text-emerald-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs sm:text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors truncate">
+                      {genreName}
+                    </h4>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      {genreTracks.length} треков
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onPlayTracks && genreTracks.length > 0) {
+                      onPlayTracks(genreTracks, 0);
+                    }
+                  }}
+                  title={`Слушать ${genreName}`}
+                  className="p-2 rounded-xl bg-white/[0.04] hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-300 transition-colors"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                </button>
               </div>
             );
           })}
