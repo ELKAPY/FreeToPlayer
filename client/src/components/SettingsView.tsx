@@ -860,6 +860,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </div>
 
+            {/* WASAPI Exclusive Mode & Low-Latency Direct Output */}
+            <div className="p-3.5 rounded-xl bg-black/20 border border-white/[0.04] flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-white">Прямой вывод звука (WASAPI Exclusive)</h4>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    Hi-Res Bit-Perfect
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Монопольный побитовый вывод в ЦАП/гарнитуру в обход стандартного микшера Windows с минимальной задержкой
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const next = !settings.wasapiExclusive;
+                  updateSettings({ wasapiExclusive: next });
+                  if (onToast) {
+                    onToast(next ? 'WASAPI Exclusive режим активирован (побитовый вывод)' : 'Стандартный системный микшер');
+                  }
+                }}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  settings.wasapiExclusive ? 'bg-cyan-500' : 'bg-white/[0.1]'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    settings.wasapiExclusive ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Audio Output Devices */}
             <div className="flex flex-col gap-2.5 pt-2 border-t border-white/[0.06]">
               <div className="flex items-center justify-between">

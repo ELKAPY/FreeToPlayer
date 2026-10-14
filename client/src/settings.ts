@@ -31,6 +31,7 @@ export interface AppSettings {
   eqPreampAuto: boolean;
   stereoBalance: number; // -1.0 (Left) to +1.0 (Right)
   sleepFadeOut: boolean;
+  wasapiExclusive: boolean; // Direct bit-perfect DAC output mode
 
   // 2. Плеер и Очередь (Playback & Queue)
   autoResumeOnStartup: boolean;
@@ -95,6 +96,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   eqPreampAuto: true,
   stereoBalance: 0,
   sleepFadeOut: true,
+  wasapiExclusive: false,
 
   // Playback
   autoResumeOnStartup: false,
