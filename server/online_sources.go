@@ -140,18 +140,18 @@ func formatID(v any) string {
 // Yandex Music API client
 func searchYandexTracks(query, token string) ([]OnlineTrack, error) {
 	results := make([]OnlineTrack, 0)
-	if token == "" {
-		return results, nil
-	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 8 * time.Second}
+	// Fetch up to 100 tracks (page 0 gives rich catalog)
 	reqURL := fmt.Sprintf("https://api.music.yandex.net/search?text=%s&type=track&page=0", url.QueryEscape(query))
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return results, nil
 	}
-	req.Header.Set("Authorization", "OAuth "+token)
-	req.Header.Set("User-Agent", "YandexMusic/FreeToPlayer")
+	if token != "" {
+		req.Header.Set("Authorization", "OAuth "+token)
+	}
+	req.Header.Set("User-Agent", "YandexMusic/FreeToPlayer (Windows NT 10.0; Win64; x64)")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -2065,12 +2065,25 @@ func calculateSearchRelevance(query string, title, artist string, isArtistSearch
 
 	// General search relevance:
 	score := 0
+	aWords := strings.Fields(cleanArtist)
+	isExactWordInArtist := false
+	for _, aw := range aWords {
+		if aw == cleanQuery {
+			isExactWordInArtist = true
+			break
+		}
+	}
+
 	if cleanArtist == cleanQuery {
+		score = 1000
+	} else if isExactWordInArtist {
+		score = 900
+	} else if strings.HasPrefix(cleanArtist, cleanQuery+" ") || strings.HasSuffix(cleanArtist, " "+cleanQuery) || strings.Contains(cleanArtist, " "+cleanQuery+" ") {
 		score = 800
 	} else if strings.HasPrefix(cleanArtist, cleanQuery) {
-		score = 700
+		score = 650
 	} else if strings.Contains(cleanArtist, cleanQuery) {
-		score = 600
+		score = 500
 	}
 
 	if cleanTitle == cleanQuery {
@@ -2096,6 +2109,11 @@ func calculateSearchRelevance(query string, title, artist string, isArtistSearch
 	if len(qWords) > 0 && matched > 0 {
 		overlapScore := (matched * 400) / len(qWords)
 		score = max(score, overlapScore)
+	}
+
+	// Penalty for accidental substring in artist (e.g. TraXXXman when searching xxxmanera)
+	if !strings.Contains(cleanArtist, cleanQuery) && !isExactWordInArtist && score < 700 {
+		score -= 100
 	}
 
 	return score
@@ -2221,8 +2239,8 @@ func (a *API) handleOnlineSearch(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	// 2. Yandex
-	if (source == "all" || source == "yandex") && token != "" {
+	// 2. Yandex (works with or without token, token gives 320kbps full catalog)
+	if source == "all" || source == "yandex" {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

@@ -118,7 +118,7 @@ func initAppIdentity() {
 	}
 
 	// 2. Register AppUserModelIDs in Windows Registry
-	for _, id := range []string{AppUserModelID, "msedgewebview2.exe", "FreeToPlayer.exe", "DJ-Player.exe", "DJPlayer.App"} {
+	for _, id := range []string{AppUserModelID, "msedgewebview2.exe", "FreeToPlayer.exe", "DJPlayer.App"} {
 		keyPath := `Software\Classes\AppUserModelId\` + id
 		if k, _, err := registry.CreateKey(registry.CURRENT_USER, keyPath, registry.SET_VALUE); err == nil {
 			_ = k.SetStringValue("DisplayName", AppDisplayName)
@@ -129,7 +129,7 @@ func initAppIdentity() {
 	}
 
 	// 3. Register Application Association in Registry
-	for _, app := range []string{"FreeToPlayer.exe", "DJ-Player.exe", "msedgewebview2.exe"} {
+	for _, app := range []string{"FreeToPlayer.exe", "msedgewebview2.exe"} {
 		appPath := `Software\Classes\Applications\` + app
 		if ak, _, err := registry.CreateKey(registry.CURRENT_USER, appPath, registry.SET_VALUE); err == nil {
 			_ = ak.SetStringValue("FriendlyAppName", AppDisplayName)

@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const CurrentAppVersion = "1.0.3"
+const CurrentAppVersion = "1.0.4"
 const GitHubRepoOwner = "ELKAPY"
 const GitHubRepoName = "FreeToPlayer"
 

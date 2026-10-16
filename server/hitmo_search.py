@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
 
-def search_hitmo(query, limit=20):
+def search_hitmo(query, limit=50):
     url = "https://rus.hitmotop.com/search?q=" + urllib.parse.quote(query)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

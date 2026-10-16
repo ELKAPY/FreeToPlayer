@@ -46,13 +46,12 @@ jobs:
         shell: pwsh
         run: |
           go build -ldflags="-H windowsgui -s -w" -o "../FreeToPlayer.exe" .
-          go build -ldflags="-H windowsgui -s -w" -o "../DJ-Player.exe" .
           go build -ldflags="-s -w" -o "../dj-server.exe" .
 
       - name: Create Release Zip Archive
         shell: pwsh
         run: |
-          Compress-Archive -Path "FreeToPlayer.exe", "DJ-Player.exe", "Запуск FreeToPlayer.bat", "Запуск DJ Player.bat", "sync_yandex_live.py", "sync_youtube_live.py", "README.md", "LICENSE" -DestinationPath "FreeToPlayer-${{ github.ref_name }}-windows-x64.zip"
+          Compress-Archive -Path "FreeToPlayer.exe", "Запуск FreeToPlayer.bat", "sync_yandex_live.py", "sync_youtube_live.py", "README.md", "LICENSE" -DestinationPath "FreeToPlayer-${{ github.ref_name }}-windows-x64.zip"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -61,7 +60,6 @@ jobs:
           files: |
             FreeToPlayer-${{ github.ref_name }}-windows-x64.zip
             FreeToPlayer.exe
-            DJ-Player.exe
           name: "FreeToPlayer Release ${{ github.ref_name }}"
           draft: false
           prerelease: false

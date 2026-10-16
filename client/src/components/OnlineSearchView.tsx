@@ -422,31 +422,60 @@ export const OnlineSearchView: React.FC<OnlineSearchViewProps> = ({
       const scoreTrack = (t: OnlineTrack) => {
         const a = (t.artist || '').toLowerCase().replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
         const tit = (t.title || '').toLowerCase().replace(/[^a-zа-я0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+        const aWords = a.split(' ').filter(Boolean);
+        const titWords = tit.split(' ').filter(Boolean);
 
         let s = 0;
 
-        // 1. Exact artist match: highest priority
-        if (a === cleanQ) s += 10000;
-        else if (a.startsWith(cleanQ)) s += 7000;
-        else if (a.includes(cleanQ)) s += 5000;
+        // Check exact whole-word matching
+        const isExactArtistWord = aWords.includes(cleanQ);
+        const isExactTitleWord = titWords.includes(cleanQ);
+
+        // 1. Exact artist match: supreme priority
+        if (a === cleanQ) {
+          s += 20000;
+        } else if (isExactArtistWord) {
+          s += 15000;
+        } else if (a.startsWith(cleanQ + ' ') || a.endsWith(' ' + cleanQ) || a.includes(' ' + cleanQ + ' ')) {
+          s += 12000;
+        } else if (a.startsWith(cleanQ)) {
+          s += 8000;
+        } else if (a.includes(cleanQ)) {
+          s += 5000;
+        }
 
         // 2. Exact title match
-        if (tit === cleanQ) s += 4000;
-        else if (tit.startsWith(cleanQ)) s += 2500;
-        else if (tit.includes(cleanQ)) s += 1500;
+        if (tit === cleanQ) {
+          s += 6000;
+        } else if (isExactTitleWord) {
+          s += 4500;
+        } else if (tit.startsWith(cleanQ)) {
+          s += 3500;
+        } else if (tit.includes(cleanQ)) {
+          s += 2000;
+        }
 
         // 3. Word token matches
         let artistWordsMatched = 0;
         let titleWordsMatched = 0;
         for (const w of qWords) {
-          if (a.includes(w)) artistWordsMatched++;
-          if (tit.includes(w)) titleWordsMatched++;
+          if (aWords.includes(w)) artistWordsMatched++;
+          if (titWords.includes(w)) titleWordsMatched++;
         }
 
-        if (qWords.length > 0 && artistWordsMatched === qWords.length) {
-          s += 3000;
+        if (qWords.length > 0 && artistWordsMatched >= qWords.length) {
+          s += 4000;
         }
-        s += artistWordsMatched * 400 + titleWordsMatched * 200;
+        s += artistWordsMatched * 600 + titleWordsMatched * 300;
+
+        // Heavy penalty for accidental partial substring matches that are NOT the artist and NOT the title
+        // e.g. query "xxxmanera" matched inside "TraXXXman"
+        const hasArtistMatch = a.includes(cleanQ) || isExactArtistWord || (qWords.length > 0 && artistWordsMatched === qWords.length);
+        const hasTitleMatch = tit.includes(cleanQ) || isExactTitleWord || (qWords.length > 0 && titleWordsMatched === qWords.length);
+
+        if (!hasArtistMatch && !hasTitleMatch) {
+          s -= 15000;
+        }
 
         // Deduct points for garbage or cover channels in artist name
         if (/(official|lyrics|topic|remix|cover|karaoke|slowed|sped up)/i.test(t.artist || '')) {

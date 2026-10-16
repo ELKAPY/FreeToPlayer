@@ -63,7 +63,6 @@
 ```
 dj/
 ├── FreeToPlayer.exe           # Готовый бинарник приложения (Windows GUI)
-├── DJ-Player.exe              # Бинарник для совместимости ярлыков
 ├── sync_yandex_live.py        # Фоновый синхронизатор Яндекс Музыки
 ├── sync_youtube_live.py       # Фоновый синхронизатор YouTube Music
 │
@@ -128,7 +127,6 @@ Copy-Item -Path "client\dist\*" -Destination "server\dist" -Recurse -Force
 ```powershell
 cd server
 go build -ldflags="-H windowsgui" -o "..\FreeToPlayer.exe" .
-go build -ldflags="-H windowsgui" -o "..\DJ-Player.exe" .
 go build -ldflags="-H windowsgui" -o "dj-server.exe" .
 cd ..
 ```

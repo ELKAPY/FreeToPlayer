@@ -263,7 +263,7 @@ def get_audius_album_tracks(album_id):
 def search_deezer_tracks(query):
     tracks = []
     try:
-        url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=25"
+        url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=100"
         resp = requests.get(url, headers=HEADERS, timeout=8)
         if resp.status_code == 200:
             data = resp.json().get("data", [])

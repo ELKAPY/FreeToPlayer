@@ -14,7 +14,7 @@ headers = {
     'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8',
 }
 
-def search_soundcloud(query, limit=15):
+def search_soundcloud(query, limit=50):
     encoded = urllib.parse.quote(query)
     url = f"https://api-v2.soundcloud.com/search/tracks?q={encoded}&client_id={CLIENT_ID}&limit={limit}"
     try:

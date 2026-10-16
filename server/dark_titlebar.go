@@ -79,7 +79,7 @@ func setWindowIcon(hwnd uintptr) {
 		return
 	}
 
-	// 1. Try loading from embedded resource in DJ-Player.exe
+	// 1. Try loading from embedded resource in FreeToPlayer.exe
 	if getModuleHandle.Find() == nil && loadIcon.Find() == nil {
 		hMod, _, _ := getModuleHandle.Call(0)
 		hResIcon, _, _ := loadIcon.Call(hMod, uintptr(1))
